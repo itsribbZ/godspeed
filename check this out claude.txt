@@ -1,0 +1,57 @@
+
+If your memory dies when your harness dies, you built the harness too thick.
+
+Memory is markdown. Skills are markdown. Brain is a git repo. The harness is a thin conductor — it reads the files, it doesn't own them.
+Quote
+Harrison Chase
+
+@hwchase17
+·
+Apr 11
+Your harness, your memory
+Agent harnesses are becoming the dominant way to build agents, and they are not going anywhere. These harnesses are intimately tied to agent memory. If you used a closed harness - especially if it’s...
+
+
+
+Best GitHub repos for Claude Code that will 10x your next project in 2026 
+
+1. Claude Mem
+https://github.com/thedotmack/claude-mem
+   Persistent memory across sessions — stop re-teaching Claude your codebase
+
+2. UI UX Pro Max https://github.com/czlonkowski/n8n-mcp
+   50+ styles, 161 color palettes, 99 UX guidelines — Claude stops building ugly UIs
+
+3. n8n-MCP…https://github.com/czlonkowski/n8n-mcp
+   Connect Claude Code to 400+ n8n integrations via MCP
+
+4. LightRAG http://github.com/hkuds/lightraghttps://github.com/HKUDS/LightRAG
+   Graph + vector RAG — lets Claude understand large codebases structurally
+
+5. Everything Claude Code https://github.com/affaan-m/everything-claude-code
+   Skills, instincts, security scanning, multi-language coverage — full agent harness
+
+6. Awesome Claude Code https://github.com/sickn33/antigravity-awesome-skills
+   Community bible — curated skills, hooks, slash commands, orchestrators
+
+7. Superpowers https://github.com/obra/superpowers
+   Forces structured thinking before writing a single line of code
+
+8. Claude Code Ultimate Guide https://github.com/FlorianBruniaux/claude-code-ultimate-guide
+   23K+ lines of docs, 219 templates, 271 quizzes — beginner to power user
+
+9. Antigravity Awesome Skills https://github.com/sickn33/antigravity-awesome-skills
+   1,200+ ready-to-use skills — one of the largest collections
+
+10. Claude Agent Blueprints https://github.com/danielrosehill/Claude-Agent-Blueprints
+    75+ agent workspace templates beyond coding
+
+11. VoiceMode MCP
+https://github.com/mbailey/voicemode
+    Natural voice conversations with Claude Code via Whisper + Kokoro
+
+12. Awesome Claude Plugins
+https://github.com/ComposioHQ/awesome-claude-plugins
+    9,000+ repos indexed with adoption metrics — find what people actually install
+
+Bookmark this before your next build.

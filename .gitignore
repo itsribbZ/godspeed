@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Virtual envs
+venv/
+.venv/
+env/
+.env
+
+# Per-session telemetry + logs — these are user-specific runtime data
+automations/homer/sleep/aurora/proposals/*.json
+automations/homer/sleep/hesper/best_practices/*.md
+automations/homer/sleep/nyx/reports/*.md
+automations/homer/sleep/nightly.log
+automations/homer/vault/state/
+automations/homer/vault/vault.db
+automations/homer/mnemos/core/
+automations/homer/mnemos/recall/
+automations/homer/mnemos/archival/
+automations/brain/eval/eval_golden_set_*.json
+automations/brain/gepa_runs/
+tokens/reports_*/
+tokens/snapshot_*.json
+
+# Secrets
+.env
+*.key
+*.pem
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Large local-only artifacts
+automations/brain/iphone.csv
+automations/brain/Ribbe_iPhone_Sentiment_Analysis.ipynb
+
+# Settings backups (these live in git history if needed)
+hooks/settings_backup_*.json
+
+# Project-local Claude Code permissions (user-specific, path-absolute)
+.claude/settings.local.json
+
+# Shipped but user-specific reports
+Toke Shipment/
+
+# Keep canonical artifacts
+!automations/brain/eval/golden_set.json
+!automations/brain/eval/brain_vs_baselines_2026-04-17.json

@@ -1,0 +1,59 @@
+# ============================================================================
+# Toke Local — Configuration Manifest
+# ============================================================================
+# Single source of truth for local LLM routing. Edit here, no code changes.
+# Read live on every CLI invocation (no caching).
+#
+# Pairs with brain/routing_manifest.toml — Brain classifies tier, Local
+# decides whether the tier is eligible for on-device execution.
+# ============================================================================
+
+version      = "1.0.0"
+last_updated = "2026-04-13"
+
+# ============================================================================
+# Ollama backend — local model server config
+# ============================================================================
+[ollama]
+base_url    = "http://localhost:11434"
+model       = "qwen2.5:14b-instruct-q4_K_M"
+temperature = 0.8                          # 0.8 lets quantized vectors breathe
+num_ctx     = 4096                         # safe for 16GB DDR4
+num_predict = 512                          # max tokens per response
+keep_alive  = 0                            # 0 = unload after each request (8GB GPU stability)
+timeout     = 300                          # seconds per request
+
+[ollama.logprobs]
+enabled  = true
+top_k    = 5                                # top-k logprobs per token position
+
+# ============================================================================
+# Confidence monitor — entropy-based override trigger
+# ============================================================================
+[confidence]
+threshold     = 0.125                       # below this → CRITICAL → override gate
+mode_priority = ["logprobs", "self_consistency", "model_stated"]
+self_consistency_samples = 2                # additional samples for fallback mode
+
+# ============================================================================
+# Routing — which Brain tiers Local will handle
+# ============================================================================
+[routing]
+local_eligible_tiers = ["S0", "S1", "S2"]
+override_mode        = "terminal"           # terminal | api
+fallback_to_claude   = true                 # if local fails hard, use Claude
+
+# ============================================================================
+# Claude override — fires only after explicit user approval
+# ============================================================================
+[override]
+model       = "claude-haiku-4-5-20251001"   # cheapest valid override target
+max_tokens  = 600
+hard_gate   = true                          # NEVER bypass user approval
+
+# ============================================================================
+# Telemetry — where decisions get logged
+# ============================================================================
+[telemetry]
+decisions_path = "~/.claude/telemetry/local/local_decisions.jsonl"
+proposals_path = "~/.claude/telemetry/local/proposals.jsonl"

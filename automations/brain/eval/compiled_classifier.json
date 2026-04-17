@@ -1,0 +1,81 @@
+{
+  "classify.predict": {
+    "traces": [],
+    "train": [],
+    "demos": [
+      {
+        "augmented": true,
+        "prompt_text": "write a migration script that reads the old JSON config format and converts it to the new TOML manifest format with validation",
+        "reasoning": "This task requires writing a complete migration script that involves:\n- Reading and parsing an old JSON format\n- Converting/transforming data to a new TOML format\n- Implementing validation logic\n- Handling edge cases and error conditions\n\nThis is a multi-step, moderately complex implementation task that goes beyond simple code edits. It requires understanding two file formats, designing conversion logic, and implementing validation. However, it's not a cross-file architectural refactor or system-wide change. It's a focused, self-contained script that could be 50-100 lines with clear dependencies and logic flow.\n\nThis falls in the S3 range: multi-step reasoning, 10-50 lines of code (potentially extending to ~100), with dependency chains between format parsing, conversion, and validation steps.",
+        "tier": "S3"
+      },
+      {
+        "augmented": true,
+        "prompt_text": "implement the token_snapshot parser so it handles both 5-minute and 1-hour cache windows separately and produces per-model cost attribution",
+        "reasoning": "This task requires implementing a parser with multiple interdependent features: handling two different time-window cache types, tracking per-model metrics, and computing cost attribution across models. It involves moderate architectural complexity (multi-window cache logic, per-model state tracking) but is scoped to a single subsystem without cross-file refactoring or novel debugging challenges. The work involves 20-40 lines of code with moderate branching logic and straightforward integration points.",
+        "tier": "S3"
+      },
+      {
+        "augmented": true,
+        "prompt_text": "write integration tests for the brain_cli hook that simulate UserPromptSubmit events and verify decisions.jsonl output format",
+        "reasoning": "This task involves writing integration tests for a specific CLI hook system. It requires:\n- Understanding the brain_cli hook architecture\n- Setting up test fixtures to simulate UserPromptSubmit events\n- Verifying output format (decisions.jsonl)\n- Writing multiple test cases covering the integration path\n\nThis is multi-step reasoning with dependency chains (event simulation → hook execution → output verification), involves understanding cross-system interactions, and likely requires 20-40 lines of test code plus supporting fixtures. It's beyond simple single-file patches but doesn't require full-system architecture redesign or overnight runs.",
+        "tier": "S3"
+      },
+      {
+        "augmented": true,
+        "prompt_text": "cat README.md",
+        "reasoning": "This is a trivial file lookup/display command. It requires minimal processing—just reading and outputting a file's contents. No reasoning, analysis, or computation is needed beyond retrieving the raw text.",
+        "tier": "S0"
+      },
+      {
+        "augmented": true,
+        "prompt_text": "what does this regex do: ^\\d{3}-\\d{4}$",
+        "reasoning": "This is a straightforward regex pattern explanation—a simple lookup/explanation task. The user is asking for a brief explanation of what a specific regex pattern matches. This requires minimal reasoning and a short, direct answer (1-2 sentences describing the pattern matches three digits, a hyphen, and four digits).",
+        "tier": "S1"
+      },
+      {
+        "augmented": true,
+        "prompt_text": "convert this JSON key from camelCase to snake_case",
+        "reasoning": "This is a straightforward code transformation task. Converting a single JSON key from camelCase to snake_case is a mechanical, one-step operation that requires minimal reasoning. The user is asking for a simple pattern transformation on a data structure key, which is a trivial to short task requiring no multi-step logic, no file dependencies, and no architectural consideration.",
+        "tier": "S0"
+      },
+      {
+        "augmented": true,
+        "prompt_text": "explain what UPROPERTY does in one sentence",
+        "reasoning": "This is a straightforward definitional question about a single Unreal Engine macro. It requires a brief, factual one-sentence explanation with no code changes, debugging, or multi-step reasoning needed.",
+        "tier": "S0"
+      },
+      {
+        "augmented": true,
+        "prompt_text": "what does this error mean: KeyError 'tier'",
+        "reasoning": "This is a straightforward error lookup/explanation request. The user is asking for an interpretation of a specific Python KeyError exception. This requires a brief explanation (1-2 sentences) of what the error means and likely causes. No code modification, multi-step reasoning, or complex analysis is needed.",
+        "tier": "S1"
+      }
+    ],
+    "signature": {
+      "instructions": "Route a user prompt to the correct Claude model cost tier (S0-S5).\n\nS0 (Haiku low): Trivial — one-word answers, lookups, yes/no\nS1 (Haiku med): Short Q&A, 1-2 sentence explanations\nS2 (Sonnet med): Single-file code edits, 3-10 line patches\nS3 (Sonnet+16K): Multi-step reasoning, 10-50 lines, dependency chains\nS4 (Opus+32K): Architecture, novel debugging, cross-file refactors\nS5 (Opus 1M+64K): Overnight runs, long-context synthesis, full-system work",
+      "fields": [
+        {
+          "prefix": "Prompt Text:",
+          "description": "The raw user prompt to classify"
+        },
+        {
+          "prefix": "Reasoning: Let's think step by step in order to",
+          "description": "${reasoning}"
+        },
+        {
+          "prefix": "Tier:",
+          "description": "Exactly one of: S0, S1, S2, S3, S4, S5"
+        }
+      ]
+    },
+    "lm": null
+  },
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.14",
+      "dspy": "3.1.3",
+      "cloudpickle": "3.1"
+    }
+  }
+}
