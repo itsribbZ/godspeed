@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "godspeed",
-      "description": "Toke engine as a plugin — Brain severity classifier (S0-S5 routing), Homer multi-agent orchestrator (Zeus + 3 MUSES + Oracle critic + Mnemos memory), 5 lifecycle hooks, 16 skills, and 2 slash commands. Fires on the word 'godspeed' — scores the prompt, auto-dispatches parallel Sonnet workers for S3+ tasks, critic-gates the synthesis, and persists to a vector-embedded memory. Self-contained install — no separate engine required.",
+      "description": "The godspeed methodology as a plugin — Brain severity classifier (S0-S5 routing), Homer multi-agent orchestrator (Zeus + 3 MUSES + Oracle critic + Mnemos memory + Sybil advisor), 5 lifecycle hooks, 11 skills, 1 slash command. Fires on 'godspeed' — scores the prompt, auto-dispatches parallel Sonnet workers for S3+ tasks, critic-gates the synthesis, persists to a vector-embedded memory. Self-contained install. Methodology, not personal config — meant to be forked and extended.",
       "source": "./plugins/godspeed",
       "category": "development",
       "homepage": "https://github.com/itsribbZ/godspeed",

@@ -1,11 +1,11 @@
 {
   "name": "godspeed",
-  "description": "Full Toke engine as a single Claude Code plugin. Ships 16 skills (Brain classifier, Homer orchestrator — Zeus/Calliope/Clio/Urania/Sybil/Mnemos/Oracle/Aurora/Hesper/Nyx, plus godspeed/verify/sitrep/close-session/toke-init), 2 slash commands, 5 lifecycle hooks, and the full Python automation stack. Fires on the word 'godspeed' — scores prompts on S0-S5 complexity, auto-dispatches parallel Sonnet workers for S3+ tasks, critic-gates the synthesis, and persists PASSing answers to a vector-embedded memory.",
+  "description": "The godspeed methodology — a routing-and-orchestration pipeline for Claude Code. Fires on the word 'godspeed': scores the prompt on S0-S5 complexity, routes to the cheapest model that handles it well, dispatches parallel Sonnet workers for S3+ tasks, critic-gates the synthesis, and persists PASSing answers to a vector-embedded memory. Ships 11 skills (godspeed + Homer orchestrator: zeus/oracle/mnemos/calliope/clio/urania/sybil + brain/verify/close-session), 1 slash command (brain-score), 5 lifecycle hooks, and the Python runtime. No personal folders, no project-specific skills — just the methodology, ready to fork and extend.",
   "author": {
     "name": "Ribbz",
     "url": "https://github.com/itsribbZ"
   },
-  "version": "2.0.0",
+  "version": "2.1.0",
   "license": "MIT",
   "homepage": "https://github.com/itsribbZ/godspeed"
 }

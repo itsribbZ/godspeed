@@ -110,7 +110,6 @@ If 2+ items share a root cause, fix the root cause ONCE.
 | Multi-agent research needed | **zeus** with Calliope (web+synthesis) + Clio (codebase map) + Urania (metrics) |
 | Single code-arch question | Handle directly with grep/read/edit |
 | Build/test verification | **verify** |
-| Cross-project status overview | **sitrep** |
 | Session closure | **close-session** |
 | Known bug hunt | Direct investigation with diagnostic logs (persist the logs — diagnostics are features) |
 
@@ -170,14 +169,11 @@ For non-Zeus runs: if something durable was learned (a reusable pattern, a new f
 | L3 | `urania` | Measurement muse — numeric receipts from telemetry |
 | L4 | `sybil` | Advisor escalation — Anthropic `advisor_20260301` wrapper |
 | L5 | `mnemos` | 3-tier memory (Core / Recall / Archival). Citation-enforced writes. Hybrid semantic + FTS5 search. Progressive disclosure. |
-| L6 | `aurora` / `hesper` / `nyx` | Sleep-time agents — weight tuning, learning distillation, theater auditing |
 | L7 | `oracle` | Critic. Scores synthesis against Sacred Rules + rubric + theater detection. Gates Mnemos writes. |
 
-Non-Homer useful skills in Toke:
-- `toke-init` — session startup (loads context)
+Utility skills bundled:
 - `close-session` — session closure (persists progress)
 - `verify` — build/test verification across Python/Node/C++/etc.
-- `sitrep` — cross-project status aggregator
 
 ---
 

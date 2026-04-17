@@ -51,10 +51,9 @@ bash install.sh
 ```
 
 The installer:
-1. Copies 16 skills + 2 slash commands into `~/.claude/`
+1. Copies the operational skills + `brain-score` slash command into `~/.claude/`
 2. Syncs the routing manifest (TOML → JSON)
-3. Runs the 65-test verification suite
-4. Prints the `settings.json` hook block you need to paste
+3. Prints the `settings.json` hook block you need to paste
 
 Use Option B if you want the skills/commands accessible outside of the plugin namespace (e.g. you want `zeus` instead of `godspeed:zeus`) or if Claude Code's plugin system isn't available in your environment.
 
@@ -117,7 +116,6 @@ Type `close session` when your work is done. Decisions, learnings, and memory wr
 | `godspeed <prompt>` | Activate the full pipeline for the prompt |
 | `godspeed info` | Render the pipeline diagram — read-only, no execution |
 | `/brain-score "prompt"` | Classify complexity without running anything |
-| `init` | Load session context (auto-detects the project from CWD) |
 | `close session` | Persist memory, write learnings, summarize |
 
 ---
