@@ -1,11 +1,11 @@
 {
   "name": "godspeed",
-  "description": "Structured prompt protocol pack. A fuzzy-match hook detects 'godspeed' in prompts and loads a detailed instruction-set skill. Telemetry hooks for PreCompact and SubagentStop events. Optional Toke/Brain integration for model routing and cost tracking.",
+  "description": "Full Toke engine as a single Claude Code plugin. Ships 16 skills (Brain classifier, Homer orchestrator — Zeus/Calliope/Clio/Urania/Sybil/Mnemos/Oracle/Aurora/Hesper/Nyx, plus godspeed/verify/sitrep/close-session/toke-init), 2 slash commands, 5 lifecycle hooks, and the full Python automation stack. Fires on the word 'godspeed' — scores prompts on S0-S5 complexity, auto-dispatches parallel Sonnet workers for S3+ tasks, critic-gates the synthesis, and persists PASSing answers to a vector-embedded memory.",
   "author": {
     "name": "Ribbz",
     "url": "https://github.com/itsribbZ"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "license": "MIT",
   "homepage": "https://github.com/itsribbZ/godspeed"
 }

@@ -9,11 +9,11 @@
   "plugins": [
     {
       "name": "godspeed",
-      "description": "Instruction-set skill that activates when the word 'godspeed' appears in any prompt. Ships a fuzzy-match trigger hook and telemetry hooks. Optional pro features require separate Toke install.",
+      "description": "Toke engine as a plugin — Brain severity classifier (S0-S5 routing), Homer multi-agent orchestrator (Zeus + 3 MUSES + Oracle critic + Mnemos memory), 5 lifecycle hooks, 16 skills, and 2 slash commands. Fires on the word 'godspeed' — scores the prompt, auto-dispatches parallel Sonnet workers for S3+ tasks, critic-gates the synthesis, and persists to a vector-embedded memory. Self-contained install — no separate engine required.",
       "source": "./plugins/godspeed",
       "category": "development",
       "homepage": "https://github.com/itsribbZ/godspeed",
-      "keywords": ["prompt-protocol", "skill", "orchestration-prompt"]
+      "keywords": ["orchestration", "routing", "multi-agent", "memory", "classifier", "homer", "brain", "toke"]
     }
   ]
 }

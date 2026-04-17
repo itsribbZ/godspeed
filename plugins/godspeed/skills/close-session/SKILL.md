@@ -1,0 +1,257 @@
+---
+name: close-session
+description: >
+  Session closure and memory persistence v2.0. Captures work completed, decisions made,
+  and context for next session. v2.0: structured learning format, cross-skill auto-promotion,
+  checkpoint verification, ecosystem health snapshot. Companion to init — init loads, close-session saves.
+model: sonnet
+---
+
+# Close Session v2.0
+
+Init loads context. Close-session saves it. Together: lossless session loop.
+
+> **Context-discipline (v2.2 — 2026-04-17):** Close-session writes summaries from what's already in the conversation. It does NOT re-load source material. Without this discipline, long sessions push main-session context past 200K and force the `[1m]` model variant, which requires `/extra-usage` billing. The rules below keep close-session inside the standard 200K window.
+
+## Context-Discipline Rules (v2.2)
+
+1. **Phase 1 session audit** — scan the scrollback you already have. Don't re-Read any file already touched this session — use what's in context.
+2. **Phase 4 memory updates** — Edit files in-place with targeted file:line anchors. Do NOT Read a file end-to-end just to understand where to append — use Grep to find the insertion point, then Edit.
+3. **Phase 4c skill `_learnings.md` checks** — always grep-first, never bulk-read:
+   ```bash
+   grep -c "^###" ~/.claude/skills/<skill>/_learnings.md   # entry count
+   tail -40 ~/.claude/skills/<skill>/_learnings.md        # recent entries only
+   ```
+   Only Read the full file if a regression is suspected.
+4. **Bible sync** — if a project's bible is >10K tokens, Edit it with targeted file:line anchors. Don't Read the whole file to understand context.
+
+Bottom line: **close-session writes summaries, it does NOT re-load session source material.** Everything needed is already in the conversation context.
+
+## Trigger
+
+"close session", "end session", "wrap up", "save session", "done for today", "session done"
+
+## Phase 1: Session Audit
+
+Scan the conversation for:
+
+1. **Work Completed** — features built, bugs fixed, code written, files created/modified
+2. **Decisions Made** — design choices, architecture decisions, approach changes
+3. **Bugs Found/Fixed** — new bugs discovered, existing bugs resolved
+4. **Research Done** — outputs from any research / analysis skill used this session
+5. **Tools Created/Updated** — new scripts, skill improvements, workflow changes
+6. **Unfinished Work** — started but not completed, mid-progress state
+7. **Next Steps** — planned next actions, logical continuations
+8. **User Feedback** — corrections, preferences, guidance that should persist
+
+## Phase 2: Detect Project
+
+Close-session auto-detects the active project from the current working directory. Claude Code already scopes memory per-project at `~/.claude/projects/<slugified-cwd>/memory/`, so the write target is:
+
+```
+~/.claude/projects/$(slug of $PWD)/memory/project_status.md
+```
+
+(Claude Code does the slugification automatically when it loads `MEMORY.md` at conversation start — you don't need to compute it manually.)
+
+If the session spanned multiple directories, persist to each of their memory dirs. If no `project_status.md` exists yet, create one with the frontmatter template in Phase 3a below.
+
+## Phase 3: Core Persistence (ALWAYS — parallel writes)
+
+### 3a. Update Project Status
+
+Read existing status file first. **Append** new session entry:
+
+```
+## Session: [First Task] — [DATE]
+**Completed**:
+- [bullet list of completed work]
+**In-Progress**:
+- [bullet list with current state]
+**Decisions**:
+- [design/architecture decisions made]
+**Next Session**:
+- [priority-ordered next steps]
+```
+
+**NEVER overwrite previous sessions.** Append only.
+
+### 3b. Create/Update Memory Files
+
+For each piece of information worth persisting beyond this session:
+
+- **New bugs** → update or create `project_bug_list.md`
+- **User feedback/corrections** → create `feedback_[topic].md` with Why + How to apply
+- **New tools/references** → create `reference_[topic].md`
+- **Architecture decisions** → update relevant project memory
+- **Research findings** → create `project_[topic].md`
+- **Lore/design content** → create `project_[topic].md`
+
+Standard frontmatter format:
+```markdown
+---
+name: [descriptive name]
+description: [one-line — specific enough to judge relevance later]
+type: [user|feedback|project|reference]
+---
+[content]
+```
+
+### 3c. Update MEMORY.md Index
+
+Add any NEW memory files to the index. One line each, under correct section heading. Don't duplicate existing entries.
+
+## Phase 4: Conditional Persistence
+
+Only run these when the session warrants it. Skip for brief/conversation-only sessions.
+
+### 4a. Bible Sync — IF session changed facts the Bible documents
+
+Trigger: session modified architecture, systems, counts, performance numbers, known issues, or source structure that the Bible describes.
+
+Projects often maintain a long-form "bible" document (architecture, systems, counts, known issues). If the session changed load-bearing facts that belong in such a doc:
+
+- **If the bible is a markdown file in the repo** → edit directly. Surgical edits only. Update the `Last Updated` date.
+- **If the bible is a PDF or external doc** → list specific changes under a `BIBLE UPDATES NEEDED` section in the session status entry. The user will apply them externally.
+- **If no bible exists** → skip.
+
+**Update when:** Factual corrections, new permanent systems, removed systems, updated counts/lists, source structure changes, performance numbers, known issues resolved.
+
+**Do NOT update with:** Session progress, temporary state, WIP notes, phase status (that's project_status.md), speculative plans.
+
+**Skip entirely if:** Session was pure research, debugging without resolution, or conversation-only.
+
+### 4b. Sacred-Rules / Personal-Protocols Update — IF durable behavioral insights were reached
+
+Check if the session produced insights that change how we work long-term (not task status). If yes, surface them as a proposal to append to the user's personal rules doc (e.g. `~/CLAUDE.md`, a project-root `CLAUDE.md`, or whatever memory file holds sacred rules for this user's workflow).
+
+**Update when:** New sacred rules, model routing decisions, prompt optimization insights, workflow shifts.
+**Do NOT update with:** Session progress, project status, temporary decisions.
+
+### 4c. Skill Learnings — IF skills were invoked AND new insights gained
+
+If a durable pattern, failure mode, or calibration update was learned that future invocations of the same skill should know about, append a short structured entry to that skill's `_learnings.md`:
+
+```markdown
+### [ENTRY_TYPE]: [Topic] — [YYYY-MM-DD]
+
+**Finding**: [One-sentence summary of the learning]
+**Evidence**: [What proved it — run data, source, or empirical observation]
+**Applies to**: [skill1, skill2, ALL]
+**Action**: [What to DO differently next time]
+```
+
+Entry types: `Score`, `Anti-Pattern`, `Recovery`, `Query ROI`, `Run`. Only write if something genuinely new was learned — don't force entries for every session.
+
+**Cross-skill pattern**: if the same learning could apply to multiple skills (e.g. a cache-discipline rule useful beyond one skill), mention it explicitly in the `Applies to` field. Follow-up consolidation into a shared file is optional — don't build that infrastructure unless you find yourself duplicating the same learning across 3+ skill-local files.
+
+**Pipeline health spot-check (optional)**: for any skill invoked more than ~10 times, `grep -c '^###' ~/.claude/skills/<skill>/_learnings.md`. An active skill with fewer than 5 entries total is probably skipping its learning-write step — flag it for investigation rather than silently accepting the gap.
+
+### 4d. Toke Systems Snapshot — IF Brain or Homer were active this session
+
+For Toke and any session where Brain/Homer were actively used (not just background routing):
+
+**Brain snapshot** (append to session status entry):
+```bash
+DECISIONS=$(wc -l < ~/.claude/telemetry/brain/decisions.jsonl 2>/dev/null || echo 0)
+TOOLS=$(wc -l < ~/.claude/telemetry/brain/tools.jsonl 2>/dev/null || echo 0)
+TICK=$(cat ~/.claude/telemetry/brain/godspeed_count.txt 2>/dev/null || echo 0)
+echo "Brain: ${DECISIONS} decisions, ${TOOLS} tool calls, godspeed tick ${TICK}"
+```
+
+**Homer snapshot** (if Homer layers were invoked):
+```bash
+python $TOKE_ROOT/automations/homer/homer_cli.py status 2>/dev/null | head -5
+```
+
+Include in the session status entry so init can show current system health.
+
+### 4e. Git Snapshot — IF in a git repo with uncommitted work
+
+```bash
+git log --oneline -5
+git status
+git diff --stat
+```
+
+Include in the session status entry so init can show "Where You Left Off" accurately.
+
+### 4f. Session Log Update — IF project uses session_log.json
+
+Projects that use a session log JSON (e.g. an append-only `session_log.json` tracking per-session deliverables): update the active entry with the session's actual summary, deliverables, learnings, and set its status to "complete".
+
+## Phase 5: Session Summary
+
+```
+═══════════════════════════════════════
+  SESSION CLOSED — [DATE]
+═══════════════════════════════════════
+
+COMPLETED:
+  - [items]
+
+IN-PROGRESS:
+  - [items with current state]
+
+SAVED TO MEMORY:
+  - [files created/updated]
+
+SKILL LEARNINGS:
+  - [skills that got a new _learnings.md entry this session, or "none"]
+
+BIBLE: [Updated / No changes needed / Updates flagged]
+
+TOKE SYSTEMS: [if active]
+  Brain: [N] decisions, [N] tool calls, tick [N]
+  Homer: [status summary or "not invoked"]
+  Mnemos: [recall rows, or "not touched"]
+
+NEXT SESSION:
+  - [priority-ordered list]
+
+STATUS: Session persisted ✓
+═══════════════════════════════════════
+```
+
+## Phase 6: Validate
+
+After all writes, verify:
+1. New memory files exist with correct frontmatter
+2. MEMORY.md includes all new entries
+3. Status file has the new session entry
+4. No orphaned references
+
+## Rules
+
+1. **NEVER delete or overwrite existing memory** — append or create new
+2. **NEVER save ephemeral info** — no debug logs, no temp state, no code that's in the repo
+3. **DO save context that would be lost** — decisions, reasoning, mid-progress state, preferences
+4. **Convert relative dates to absolute** — "tomorrow" → specific date
+5. **Keep entries concise** — summaries over transcripts
+6. **Deduplicate** — check existing memories before creating new ones
+7. **Flag critical next-session context** — if something is CRITICAL for pickup, emphasize it in status
+
+## Init Integration
+
+| Close-Session Writes | Init Reads |
+|---------------------|------------|
+| project_status.md (session entry) | "Where You Left Off" section |
+| Bible updates (factual edits or flags) | Architecture, systems, rules |
+| feedback_*.md (user preferences) | Behavioral rules |
+| project_*.md (project state) | Project context |
+| reference_*.md (tools/resources) | Tool/resource lookups |
+| MEMORY.md (index updates) | Always loaded at conversation start |
+| _learnings.md (skill insights) | Read before skill execution |
+| Brain telemetry snapshot | Brain scan / decision count |
+| Homer VAULT state | Homer layer health |
+| Git snapshot in status | Recent work areas |
+| session_log.json (if applicable) | Session history and continuity |
+
+## Rules (brief)
+
+- **Never overwrite previous sessions** in `project_status.md` — append only.
+- **Never save ephemeral info** — no debug logs, no temp state, no code that's already in the repo.
+- **DO save context that would be lost** — decisions, reasoning, mid-progress state, user preferences.
+- **Convert relative dates to absolute** — "tomorrow" → specific date.
+- **Keep entries concise** — summaries over transcripts.
+- **Deduplicate** — check existing memories before creating new ones.

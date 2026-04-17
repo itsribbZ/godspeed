@@ -1,0 +1,932 @@
+{
+  "version": "2.6.2",
+  "last_updated": "2026-04-12",
+  "weights": {
+    "prompt_length": 0.06,
+    "code_blocks": 0.12,
+    "file_refs": 0.2,
+    "reasoning": 0.22,
+    "multi_step": 0.13,
+    "ambiguity": 0.03,
+    "tool_calls": 0.04,
+    "context_size": 0.1,
+    "code_action": 0.14,
+    "system_scope": 0.16
+  },
+  "normalization": {
+    "prompt_length_cap": 400,
+    "code_blocks_cap": 2,
+    "file_refs_cap": 3,
+    "reasoning_cap": 3,
+    "multi_step_cap": 2,
+    "ambiguity_cap": 2,
+    "tool_calls_cap": 3,
+    "context_tokens_cap": 150000,
+    "code_action_cap": 2,
+    "system_scope_cap": 2
+  },
+  "thresholds": {
+    "s0_max": 0.09,
+    "s1_max": 0.16,
+    "s2_max": 0.22,
+    "s3_max": 0.32,
+    "s4_max": 0.55
+  },
+  "tier_map": {
+    "S0": {
+      "model": "haiku",
+      "effort": "low",
+      "extended_thinking_budget": 0,
+      "description": "Trivial — lookups, status checks, one-line commands"
+    },
+    "S1": {
+      "model": "haiku",
+      "effort": "medium",
+      "extended_thinking_budget": 0,
+      "description": "Light — short factual Q, formatting, simple summaries"
+    },
+    "S2": {
+      "model": "sonnet",
+      "effort": "medium",
+      "extended_thinking_budget": 0,
+      "description": "Standard — single-file edits, Python scripts, docs"
+    },
+    "S3": {
+      "model": "sonnet",
+      "effort": "high",
+      "extended_thinking_budget": 16000,
+      "description": "Heavy — multi-step work, moderate debugging, research summaries (extended thinking enabled)"
+    },
+    "S4": {
+      "model": "opus",
+      "effort": "high",
+      "extended_thinking_budget": 32000,
+      "description": "Critical — architecture, multi-file refactor, novel debugging, synthesis"
+    },
+    "S5": {
+      "model": "opus[1m]",
+      "effort": "max",
+      "extended_thinking_budget": 64000,
+      "description": "Ultra — 1M context workloads, overnight unattended runs, UE5 full-system work"
+    }
+  },
+  "keywords": {
+    "reasoning": [
+      "why",
+      "how does",
+      "explain",
+      "design",
+      "architecture",
+      "architect",
+      "refactor",
+      "prove",
+      "derive",
+      "analyze",
+      "understand",
+      "implement",
+      "strategy",
+      "approach",
+      "plan",
+      "reason",
+      "synthesize",
+      "update",
+      "modify",
+      "fix",
+      "change",
+      "rewrite",
+      "enhance",
+      "optimize",
+      "debug",
+      "function",
+      "class",
+      "method",
+      "module",
+      "schema",
+      "interface"
+    ],
+    "multi_step": [
+      "step by step",
+      "first",
+      "then",
+      "finally",
+      "next",
+      "multi-step",
+      "break down",
+      "phases",
+      "sequence",
+      "pipeline",
+      "in order",
+      "workflow"
+    ],
+    "ambiguity": [
+      "could",
+      "might",
+      "possibly",
+      "unclear",
+      "depends",
+      "not sure",
+      "maybe",
+      "or could",
+      "perhaps",
+      "either",
+      "ambiguous",
+      "uncertain"
+    ],
+    "tool_calls": [
+      "run",
+      "build",
+      "verify",
+      "test",
+      "check",
+      "execute",
+      "compile",
+      "install",
+      "deploy",
+      "launch",
+      "grep",
+      "search"
+    ],
+    "correction": [
+      "that's wrong",
+      "thats wrong",
+      "that is wrong",
+      "you missed",
+      "redo",
+      "fix this",
+      "not right",
+      "incorrect",
+      "undo",
+      "nevermind",
+      "wrong answer",
+      "try again",
+      "no that",
+      "actually no",
+      "doesn't work",
+      "didn't work",
+      "didnt work"
+    ],
+    "code_action": [
+      "add a",
+      "add an",
+      "add the",
+      "write a",
+      "write an",
+      "write the",
+      "create a",
+      "create an",
+      "build a",
+      "build an",
+      "implement a",
+      "implement an",
+      "wire into",
+      "wire it",
+      "wire the",
+      "hook into",
+      "hook up",
+      "integrate with",
+      "integrate into",
+      "connect to",
+      "wrap the",
+      "wrapper for",
+      "inject",
+      "generate a",
+      "migrate"
+    ],
+    "system_scope": [
+      "from scratch",
+      "cross-file",
+      "cross-component",
+      "end to end",
+      "end-to-end",
+      "entire",
+      "every",
+      "all of the",
+      "full review",
+      "full audit",
+      "full architecture",
+      "across",
+      "ecosystem",
+      "pipeline",
+      "orchestrat",
+      "parallel",
+      "concurrent",
+      "async",
+      "fallback",
+      "escalat",
+      "retry logic",
+      "backoff",
+      "exponential",
+      "diagnose",
+      "root cause",
+      "trace the",
+      "audit the",
+      "review every",
+      "read every",
+      "overnight",
+      "redesign",
+      "migration plan",
+      "architecture review",
+      "tiered",
+      "multi-system",
+      "multi-file"
+    ]
+  },
+  "guardrails": {
+    "gpqa_hard_reasoning": {
+      "description": "GPQA Diamond cliff (-17.2pts Opus->Sonnet) — hard science / formal reasoning",
+      "keywords": [
+        "prove",
+        "theorem",
+        "quantum",
+        "particle physics",
+        "complexity analysis",
+        "big-o",
+        "formal proof",
+        "first principles",
+        "fundamental",
+        "differential equation",
+        "topology",
+        "cryptographic proof",
+        "lemma",
+        "corollary",
+        "axiom"
+      ],
+      "min_score": 0.85
+    },
+    "multi_file_refactor": {
+      "description": "3+ file refs => multi-file work, Aider polyglot cliff (Opus floor)",
+      "min_file_refs": 3,
+      "min_score": 0.35
+    },
+    "ue5_code_work": {
+      "description": "UE5 code work (keyword AND file ref) => Opus (UE5 C++ complexity)",
+      "domain_tags": [
+        "ue5"
+      ],
+      "keywords": [
+        "UPROPERTY",
+        "UCLASS",
+        "UFUNCTION",
+        ".uproject",
+        "UE5",
+        "UE 5",
+        "unreal engine",
+        "sworder"
+      ],
+      "min_file_refs": 1,
+      "require_all": true,
+      "min_score": 0.8
+    },
+    "ue5_mention_floor": {
+      "description": "Any UE5 mention floors to Sonnet (Haiku is wrong for any UE5 context)",
+      "domain_tags": [
+        "ue5"
+      ],
+      "keywords": [
+        "UPROPERTY",
+        "UCLASS",
+        "UFUNCTION",
+        ".uproject",
+        "UE5",
+        "UE 5",
+        "unreal engine",
+        "sworder"
+      ],
+      "min_score": 0.22
+    },
+    "code_edit_floor": {
+      "description": "Code edit (verb + file ref) => Sonnet floor (Haiku fails Aider polyglot hard)",
+      "keywords": [
+        "update the",
+        "modify the",
+        "fix the",
+        "change the",
+        "add the",
+        "add a",
+        "add an",
+        "remove the",
+        "rewrite the",
+        "edit the",
+        "write a",
+        "create a",
+        "implement a"
+      ],
+      "min_file_refs": 1,
+      "require_all": true,
+      "min_score": 0.22
+    },
+    "debug_floor": {
+      "description": "Debug/RCA context => Sonnet floor (Haiku RCA unreliable)",
+      "keywords": [
+        "bug in",
+        "error in",
+        "failing test",
+        "failing",
+        "stack trace",
+        "exception",
+        "traceback",
+        "crashes",
+        "crashed",
+        "broken",
+        "assertion",
+        "segfault"
+      ],
+      "min_score": 0.22
+    },
+    "architecture_work": {
+      "description": "System design / architecture work => Opus floor (GPQA reasoning cliff proxy)",
+      "keywords": [
+        "architecture",
+        "system design",
+        "design pattern",
+        "strategy pattern",
+        "state machine",
+        "event dispatch",
+        "event bus",
+        "dispatcher pattern",
+        "decouple",
+        "decoupling",
+        "abstraction layer",
+        "architect",
+        "plugin system",
+        "packaging system",
+        "multi-service"
+      ],
+      "min_score": 0.35
+    },
+    "code_generation_floor": {
+      "description": "Code generation verb (no file ref required) => Sonnet floor",
+      "keywords": [
+        "add a",
+        "add an",
+        "write a",
+        "write an",
+        "write integration",
+        "write unit",
+        "write end-to-end",
+        "write e2e",
+        "write smoke",
+        "write regression",
+        "create a",
+        "create an",
+        "build a",
+        "build an",
+        "implement a",
+        "implement an",
+        "wire into",
+        "wire it into",
+        "wire the",
+        "hook into",
+        "refactor this",
+        "refactor the",
+        "rename variable",
+        "rename the variable",
+        "rename the",
+        "replace the",
+        "replace print",
+        "extract the",
+        "extract a",
+        "fix the",
+        "update the",
+        "update all",
+        "modify the",
+        "remove the",
+        "delete the",
+        "move the",
+        "swap the",
+        "convert the",
+        "add input",
+        "add type",
+        "add error",
+        "add logging",
+        "add validation",
+        "implement the",
+        "add search",
+        "add oauth",
+        "add dark mode",
+        "add websocket",
+        "add pagination",
+        "add authentication",
+        "add streaming",
+        "create the"
+      ],
+      "min_score": 0.22
+    },
+    "informational_question_floor": {
+      "description": "Short informational question (what/how/why/explain) => S1 floor",
+      "regex": [
+        "(?i)^(what|how|why|when|where|explain|show me|describe|tell me|what's|how's|why's|what is|how is|how do|how does|how can|what are|what does|when should|when to|why does|why is|explain what|explain how|explain the)\\b.{0,80}$"
+      ],
+      "min_score": 0.1
+    },
+    "system_scope_floor": {
+      "description": "System-scope breadth marker => Sonnet-high floor",
+      "keywords": [
+        "from scratch",
+        "end to end",
+        "end-to-end",
+        "entire pipeline",
+        "full review",
+        "full audit",
+        "full architecture",
+        "review every",
+        "read every",
+        "overnight",
+        "migration plan",
+        "redesign the",
+        "architecture review",
+        "root cause",
+        "diagnose",
+        "exponential backoff"
+      ],
+      "min_score": 0.4
+    },
+    "complex_design_floor": {
+      "description": "Complex design patterns (novel architecture) => S4 floor",
+      "keywords": [
+        "graceful degradation",
+        "fallback chain",
+        "offline fallback",
+        "fallback mode",
+        "tiered degradation",
+        "degradation mode",
+        "multi-tier",
+        "parallel dispatch",
+        "atomically",
+        "atomic write",
+        "hybrid",
+        "tokenizer",
+        "tiered memory",
+        "tiered system",
+        "memory system",
+        "schema validation",
+        "validate against a schema",
+        "state machine design",
+        "dispatch system"
+      ],
+      "min_score": 0.35
+    },
+    "design_from_scratch": {
+      "description": "Design + from scratch => S4 floor (novel system architecture)",
+      "keywords": [
+        "from scratch"
+      ],
+      "regex": [
+        "(?i)\\bdesign\\b"
+      ],
+      "require_all": true,
+      "min_score": 0.35
+    },
+    "overnight_sweep": {
+      "description": "Overnight task => S5 floor (long-running batch, definitionally max-tier)",
+      "keywords": [
+        "overnight"
+      ],
+      "min_score": 0.85
+    },
+    "full_sweep_floor": {
+      "description": "Full sweep (every + file ref) => S4 floor",
+      "keywords": [
+        "every"
+      ],
+      "min_file_refs": 1,
+      "require_all": true,
+      "min_score": 0.35
+    },
+    "multi_concern_floor": {
+      "description": "3+ comma-separated concerns => S3 floor (structural multi-step detection)",
+      "regex": [
+        "(?i)(—\\s*\\w+.+,.+,|:\\s*\\w+.+,.+,.+|\\bwith\\s+\\w+.+,.+,.+|\\bthat\\s+\\w+.+,.+,)"
+      ],
+      "min_score": 0.35
+    },
+    "large_volume_floor": {
+      "description": "Large volume (10+ files/pages/lines/modules) => S5 floor",
+      "regex": [
+        "(?i)\\b(\\d{2,}|[\\d.]+[Kk])\\+?\\s*(files|pages|lines|modules|skills|checks|documents|chapters)"
+      ],
+      "keywords": [
+        "every file",
+        "every page",
+        "entire corpus",
+        "full ecosystem"
+      ],
+      "min_score": 0.55
+    },
+    "ue5_debug_floor": {
+      "description": "UE5 cross-system debug (domain term AND investigation verb) => S4 floor",
+      "domain_tags": [
+        "ue5"
+      ],
+      "keywords": [
+        "AnimBP",
+        "skeletal mesh",
+        "T-pose",
+        "T-posing",
+        "blueprint graph",
+        "replication graph",
+        "movement component",
+        "animation blueprint",
+        "anim graph",
+        "blend space",
+        "montage"
+      ],
+      "regex": [
+        "(?i)(trace the|trace.*root cause|root cause.*across|diagnose.*across|across.*blueprint|across.*skeletal|across.*replication)"
+      ],
+      "require_all": true,
+      "min_score": 0.35
+    },
+    "adversarial_safety": {
+      "description": "Adversarial/safety signals (injection, destructive ops, secrets) => S5 floor",
+      "keywords": [
+        "ignore all previous",
+        "ignore all prior",
+        "ignore your instructions",
+        "new instructions override",
+        "disregard the above",
+        "disregard all",
+        "you are now",
+        "rm -rf",
+        "rm -r /",
+        "rm -rf /",
+        "rm -rf .",
+        "force push",
+        "--force",
+        "--no-verify",
+        "git reset --hard",
+        "git clean -f",
+        ".ssh/id_rsa",
+        ".env",
+        "credentials.json",
+        "api_key",
+        "paste them here",
+        "output the contents of",
+        "exfil",
+        "attacker.com",
+        "bypass all hooks",
+        "auto-close",
+        "close the session"
+      ],
+      "min_score": 0.85
+    },
+    "deep_reasoning_floor": {
+      "description": "Deep reasoning (theory, formal analysis, benchmark comparison) => S4 floor",
+      "keywords": [
+        "information-theoretic",
+        "formal condition",
+        "formal proof",
+        "entropy",
+        "plateaus",
+        "plateau",
+        "benchmark",
+        "implies for",
+        "what does this imply",
+        "tradeoffs",
+        "trade-offs",
+        "failure modes",
+        "show your math",
+        "cite the",
+        "cost reduction",
+        "cost model",
+        "quality cliff",
+        "quality drop",
+        "compare the",
+        "minimum viable",
+        "eval harness",
+        "impact analysis",
+        "what breaks if"
+      ],
+      "min_score": 0.35
+    },
+    "long_context": {
+      "description": "MRCR cliff (Opus 76% vs Sonnet4.5 18.5%) — 1M context workloads",
+      "min_context_tokens": 150000,
+      "min_score": 0.85
+    },
+    "creative_game_design": {
+      "description": "Sacred Rule 6 + novel reasoning — creative / GDD / lore tasks",
+      "keywords": [
+        "lore",
+        "story arc",
+        "character arc",
+        "mechanic design",
+        "game design document",
+        "GDD",
+        "game feel",
+        "narrative",
+        "worldbuilding"
+      ],
+      "min_score": 0.35
+    },
+    "short_action_floor": {
+      "description": "Short action prompt (verb + object + preposition) => S2 floor",
+      "regex": [
+        "(?i)\\b(add|make|support|wire|log|batch|enable|track)\\s+\\w+.*\\b(to the|to all|for the|for new|from|with|when|without|on the|and sync|and flush)\\b"
+      ],
+      "min_score": 0.22
+    },
+    "long_prompt_floor": {
+      "description": "Prompts with 800+ chars are substantive — Sonnet floor prevents Haiku routing",
+      "regex": [
+        "(?s).{800,}"
+      ],
+      "min_score": 0.22
+    },
+    "domain_expert_vocabulary_floor": {
+      "description": "Domain-expert technical vocabulary => S4 floor",
+      "keywords": [
+        "transactional write",
+        "race condition",
+        "race conditions",
+        "false positive rate",
+        "false negative rate",
+        "cost-benefit",
+        "calibration error",
+        "convergence detector",
+        "accuracy drift",
+        "canary deployment",
+        "cold start penalty",
+        "daemon mode",
+        "schema versioning",
+        "forward-compatible",
+        "degrade gracefully",
+        "hill-climbing",
+        "EWMA",
+        "tolerance band",
+        "idempotent",
+        "idempotency",
+        "double-writes",
+        "half-written",
+        "signal weight",
+        "classification overhead",
+        "A/B testing",
+        "explainability",
+        "self-test",
+        "regression test suite",
+        "impact scoring",
+        "isolation guarantees",
+        "task decomposition"
+      ],
+      "min_score": 0.35
+    },
+    "analytical_question_floor": {
+      "description": "Analytical questions about system behavior => S4 floor",
+      "regex": [
+        "(?i)(is the .{5,} actually|what is the actual .{5,} rate|can .{3,} craft .{3,} that|can .{3,} force the|model the cost|does .{5,} actually sav|mathematically impossible|counterintuitive|methodological consistency|produce consistent)"
+      ],
+      "min_score": 0.35
+    },
+    "system_trace_floor": {
+      "description": "System trace/investigation patterns => S3 floor",
+      "regex": [
+        "(?i)\\b(trace the full|trace why|replay all|find every \\w+ed|identify the duplicated|detect and compensate|identify .{5,} patterns)\\b"
+      ],
+      "min_score": 0.25
+    },
+    "feature_scope_floor": {
+      "description": "Feature-level technical terms => S3 floor",
+      "keywords": [
+        "middleware",
+        "webhook retry",
+        "dead letter queue",
+        "backoff curve",
+        "database seeding",
+        "factory functions",
+        "real-time presence",
+        "presence indicators",
+        "hot-reloadable",
+        "hot-reload",
+        "hot reload"
+      ],
+      "min_score": 0.25
+    }
+  },
+  "ceiling_guardrails": {
+    "single_file_scope_ceiling": {
+      "description": "Specific code reference (function(), this file, --flag, named artifact) => S2 ceiling",
+      "regex": [
+        "(?i)\\b(this function|this file|this CLI|this for-loop|in this file|in this function|all callers in this|all parameters in this|in this class)",
+        "(?i)\\w+\\(\\)",
+        "(?i)--[\\w-]+\\s+(flag|that\\s+skip|that\\s+print)",
+        "(?i)\\b(refactor this|rename the \\w+ function|rename the \\w+ variable|rename variable|extract the hardcoded|replace the print|add type hints to)",
+        "(?i)\\bthe\\s+\\w+\\s+function\\b",
+        "(?i)\\b(for|to)\\s+the\\s+\\w+\\s+(enum|parser|schema|query|route|variable)\\b",
+        "(?i)\\b(add|write)\\s+(a\\s+)?(docstring|try.except|unit test|input validation)\\s+(for|to|around)\\b",
+        "(?i)/api/\\w+",
+        "(?i)\\b(the Supabase query|the CSS so|add CORS|Pydantic model for)",
+        "(?i)\\bthe\\s+[\\w.-]+\\.(?:py|json|jsonl|toml|yaml|yml|md|sh|txt|csv|log|sql|html|css)\\s+file\\b"
+      ],
+      "max_score": 0.21
+    },
+    "simple_question_ceiling": {
+      "description": "Short question prompt (how do I, what does, explain) => S1 ceiling",
+      "regex": [
+        "(?i)^(how do I|how does|how can I|what does|what is|what are|what's the|explain what|explain how|explain the|what port|what error|when should|when to use|why does|why is)\\b.{0,45}$"
+      ],
+      "max_score": 0.15
+    }
+  },
+  "skills": {
+    "blueprint": "S4",
+    "professor": "S4",
+    "profTeam": "S4",
+    "holy-trinity": "S4",
+    "cycle": "S4",
+    "godspeed": "S4",
+    "devTeam": "S4",
+    "analyst": "S4",
+    "ue-knowledge": "S4",
+    "bionics": "S4",
+    "debug": "S4",
+    "marketbot": "S4",
+    "verify": "S2",
+    "close-session": "S2",
+    "init": "S2",
+    "sworder-init": "S2",
+    "quantified-init": "S2",
+    "forge3d-init": "S2",
+    "buddy-init": "S2",
+    "enigma-init": "S2",
+    "ribbz-init": "S2",
+    "career-ops-init": "S2",
+    "toke-init": "S2",
+    "ue-knowledge-init": "S2",
+    "organizer": "S2",
+    "finder": "S2",
+    "reference": "S2",
+    "blend-master": "S2",
+    "player1": "S2",
+    "scanner": "S2",
+    "simplify": "S2",
+    "brain": "S2",
+    "update-config": "S2",
+    "sitrep": "S1",
+    "pulse": "S1",
+    "find": "S1",
+    "knowledge-router": "S1",
+    "keybindings-help": "S1"
+  },
+  "models": {
+    "haiku": {
+      "full_id": "claude-haiku-4-5",
+      "context_window": 200000,
+      "cost_input_per_mtok": 1.0,
+      "cost_output_per_mtok": 5.0,
+      "cost_cache_read_per_mtok": 0.1,
+      "relative_cost_vs_opus": 0.2
+    },
+    "sonnet": {
+      "full_id": "claude-sonnet-4-6",
+      "context_window": 200000,
+      "cost_input_per_mtok": 3.0,
+      "cost_output_per_mtok": 15.0,
+      "cost_cache_read_per_mtok": 0.3,
+      "relative_cost_vs_opus": 0.6
+    },
+    "opus": {
+      "full_id": "claude-opus-4-6",
+      "context_window": 200000,
+      "cost_input_per_mtok": 5.0,
+      "cost_output_per_mtok": 25.0,
+      "cost_cache_read_per_mtok": 0.5,
+      "relative_cost_vs_opus": 1.0
+    },
+    "opus[1m]": {
+      "full_id": "claude-opus-4-6-1m",
+      "context_window": 1000000,
+      "cost_input_per_mtok": 5.0,
+      "cost_output_per_mtok": 25.0,
+      "cost_cache_read_per_mtok": 0.5,
+      "relative_cost_vs_opus": 1.0
+    }
+  },
+  "learning": {
+    "enabled": true,
+    "alpha": 0.005,
+    "skill_override_threshold": 5,
+    "drift_threshold_pp": 10.0,
+    "correction_window_turns": 3,
+    "confidence_low_threshold": 0.3
+  },
+  "budget": {
+    "enabled": true,
+    "session_warn_usd": 2.0,
+    "session_alert_usd": 10.0,
+    "daily_warn_usd": 50.0,
+    "daily_alert_usd": 150.0
+  },
+  "advisor": {
+    "enabled_when_available": true,
+    "note": "advisor_20260301 API tool - not yet exposed via Claude Code slash command",
+    "docs_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/advisor-tool",
+    "blog_url": "https://claude.com/blog/the-advisor-strategy",
+    "beta_header": "anthropic-beta: advisor-tool-2026-03-01",
+    "pairs": [
+      {
+        "executor": "sonnet",
+        "advisor": "opus",
+        "best_for": "agentic tool-heavy sessions, multi-step debugging, research synthesis"
+      },
+      {
+        "executor": "haiku",
+        "advisor": "opus",
+        "best_for": "BrowseComp-style lookup + reasoning, short agentic tasks"
+      }
+    ],
+    "config": {
+      "max_uses_default": 3,
+      "cache_ttl": "5m"
+    },
+    "opusplan": {
+      "alias": "opusplan",
+      "plan_model": "opus",
+      "execute_model": "sonnet",
+      "note": "Free cost win for plan-heavy sessions. Run /model opusplan at session start."
+    }
+  },
+  "uncertainty": {
+    "escalate_on_low_confidence": true,
+    "fail_open_tier": "S4",
+    "fail_open_model": "opus",
+    "fail_open_effort": "high",
+    "rationale": "Conservative: if we don't know, assume it's hard. Cost is recoverable, quality regression is not."
+  },
+  "effort_map": {
+    "1": {
+      "description": "Direct answer — Brain only, no orchestration",
+      "layers": [
+        "L1"
+      ],
+      "model": "sonnet",
+      "muse_count": 0,
+      "oracle_mode": "off",
+      "mnemos_mode": "off",
+      "extended_thinking_budget": 0
+    },
+    "2": {
+      "description": "Light orchestration — Zeus sequential, no parallel MUSES",
+      "layers": [
+        "L0",
+        "L1",
+        "L2"
+      ],
+      "model": "sonnet",
+      "muse_count": 0,
+      "oracle_mode": "off",
+      "mnemos_mode": "checkpoint",
+      "extended_thinking_budget": 0
+    },
+    "3": {
+      "description": "Standard multi-agent — Zeus + 3 MUSES parallel + Sybil standby",
+      "layers": [
+        "L0",
+        "L1",
+        "L2",
+        "L3",
+        "L4",
+        "L7"
+      ],
+      "model": "opus",
+      "muse_count": 3,
+      "oracle_mode": "light",
+      "mnemos_mode": "checkpoint",
+      "extended_thinking_budget": 16000
+    },
+    "4": {
+      "description": "Deep multi-agent — full pipeline + Oracle strict + Mnemos full",
+      "layers": [
+        "L0",
+        "L1",
+        "L2",
+        "L3",
+        "L4",
+        "L5",
+        "L7"
+      ],
+      "model": "opus",
+      "muse_count": 3,
+      "oracle_mode": "strict",
+      "mnemos_mode": "full",
+      "extended_thinking_budget": 32000
+    },
+    "5": {
+      "description": "Full Pantheon — every layer, max depth, sleep agents queue follow-ups",
+      "layers": [
+        "L0",
+        "L1",
+        "L2",
+        "L3",
+        "L4",
+        "L5",
+        "L6",
+        "L7"
+      ],
+      "model": "opus[1m]",
+      "muse_count": 3,
+      "oracle_mode": "strict",
+      "mnemos_mode": "full",
+      "extended_thinking_budget": 64000
+    }
+  }
+}

@@ -1,0 +1,462 @@
+{
+  "benchmark_date": "2026-04-17",
+  "golden_set_size": 200,
+  "brain_version": "v2.6.3",
+  "classifiers": {
+    "Brain (v2.6.3)": {
+      "total": 200,
+      "exact": 138,
+      "adjacent": 61,
+      "wrong": 1,
+      "exact_pct": 69.0,
+      "weighted": 0.843,
+      "per_tier": {
+        "S0": {
+          "exact": 7,
+          "adjacent": 3,
+          "wrong": 0,
+          "total": 10
+        },
+        "S1": {
+          "exact": 7,
+          "adjacent": 5,
+          "wrong": 0,
+          "total": 12
+        },
+        "S2": {
+          "exact": 17,
+          "adjacent": 0,
+          "wrong": 0,
+          "total": 17
+        },
+        "S3": {
+          "exact": 37,
+          "adjacent": 38,
+          "wrong": 0,
+          "total": 75
+        },
+        "S4": {
+          "exact": 60,
+          "adjacent": 13,
+          "wrong": 1,
+          "total": 74
+        },
+        "S5": {
+          "exact": 10,
+          "adjacent": 2,
+          "wrong": 0,
+          "total": 12
+        }
+      },
+      "wrong_cases": [
+        [
+          "S4",
+          "S1",
+          "why does the classifier score identical prompts differently on consecutive runs "
+        ]
+      ]
+    },
+    "Keyword-only": {
+      "total": 200,
+      "exact": 57,
+      "adjacent": 82,
+      "wrong": 61,
+      "exact_pct": 28.5,
+      "weighted": 0.49,
+      "per_tier": {
+        "S0": {
+          "exact": 7,
+          "adjacent": 3,
+          "wrong": 0,
+          "total": 10
+        },
+        "S1": {
+          "exact": 8,
+          "adjacent": 3,
+          "wrong": 1,
+          "total": 12
+        },
+        "S2": {
+          "exact": 1,
+          "adjacent": 13,
+          "wrong": 3,
+          "total": 17
+        },
+        "S3": {
+          "exact": 28,
+          "adjacent": 23,
+          "wrong": 24,
+          "total": 75
+        },
+        "S4": {
+          "exact": 10,
+          "adjacent": 36,
+          "wrong": 28,
+          "total": 74
+        },
+        "S5": {
+          "exact": 3,
+          "adjacent": 4,
+          "wrong": 5,
+          "total": 12
+        }
+      },
+      "wrong_cases": [
+        [
+          "S1",
+          "S3",
+          "how do I create a virtual environment in Python"
+        ],
+        [
+          "S2",
+          "S5",
+          "refactor this for-loop into a list comprehension"
+        ],
+        [
+          "S2",
+          "S0",
+          "replace the print statements with proper logging using the stdlib logger"
+        ],
+        [
+          "S2",
+          "S0",
+          "extract the hardcoded URL into a constant at the top of the file"
+        ],
+        [
+          "S4",
+          "S1",
+          "my AnimBP is T-posing only when the movement component is replicating \u2014 trace th"
+        ],
+        [
+          "S5",
+          "S2",
+          "review every skill in ~/.claude/skills, identify pattern drift against shared pr"
+        ],
+        [
+          "S5",
+          "S0",
+          "overnight: ingest 200 decisions from decisions.jsonl, cluster by failure mode, g"
+        ],
+        [
+          "S5",
+          "S0",
+          "overnight: scan every _learnings.md across all 29 skills, extract recurring patt"
+        ],
+        [
+          "S5",
+          "S0",
+          "read every page of the Ribbe Universal Framework PDF, verify each of the 8 propo"
+        ],
+        [
+          "S5",
+          "S3",
+          "full ecosystem audit: read all 29 skill SKILL.md files, all memory files, all ho"
+        ]
+      ]
+    },
+    "Length-only": {
+      "total": 200,
+      "exact": 50,
+      "adjacent": 113,
+      "wrong": 37,
+      "exact_pct": 25.0,
+      "weighted": 0.532,
+      "per_tier": {
+        "S0": {
+          "exact": 10,
+          "adjacent": 0,
+          "wrong": 0,
+          "total": 10
+        },
+        "S1": {
+          "exact": 11,
+          "adjacent": 1,
+          "wrong": 0,
+          "total": 12
+        },
+        "S2": {
+          "exact": 11,
+          "adjacent": 6,
+          "wrong": 0,
+          "total": 17
+        },
+        "S3": {
+          "exact": 18,
+          "adjacent": 49,
+          "wrong": 8,
+          "total": 75
+        },
+        "S4": {
+          "exact": 0,
+          "adjacent": 57,
+          "wrong": 17,
+          "total": 74
+        },
+        "S5": {
+          "exact": 0,
+          "adjacent": 0,
+          "wrong": 12,
+          "total": 12
+        }
+      },
+      "wrong_cases": [
+        [
+          "S4",
+          "S2",
+          "build a tokenizer for routing_manifest.toml that strips comments and validates s"
+        ],
+        [
+          "S5",
+          "S3",
+          "read the entire Sworder Bible (108k lines), ue-knowledge (46k lines), and GDD \u2014 "
+        ],
+        [
+          "S5",
+          "S3",
+          "review every skill in ~/.claude/skills, identify pattern drift against shared pr"
+        ],
+        [
+          "S5",
+          "S3",
+          "overnight: ingest 200 decisions from decisions.jsonl, cluster by failure mode, g"
+        ],
+        [
+          "S5",
+          "S3",
+          "full architecture review of Toke \u2014 Brain v2.3, Homer L0-L7, VAULT, Sybil, Muses "
+        ],
+        [
+          "S5",
+          "S3",
+          "read every file under Desktop/atelier, generate a feature-parity PR for Ink Find"
+        ],
+        [
+          "S5",
+          "S3",
+          "overnight: scan every _learnings.md across all 29 skills, extract recurring patt"
+        ],
+        [
+          "S5",
+          "S3",
+          "read the entire UE Knowledge corpus (18 files, 46K+ lines), cross-reference with"
+        ],
+        [
+          "S5",
+          "S3",
+          "full security audit of Sentinel Defender \u2014 review all 15 modules, run the 42 che"
+        ],
+        [
+          "S5",
+          "S3",
+          "overnight: read all session transcripts from the last 30 days, extract every rou"
+        ]
+      ]
+    },
+    "Majority-class (always S3)": {
+      "total": 200,
+      "exact": 75,
+      "adjacent": 91,
+      "wrong": 34,
+      "exact_pct": 37.5,
+      "weighted": 0.603,
+      "per_tier": {
+        "S0": {
+          "exact": 0,
+          "adjacent": 0,
+          "wrong": 10,
+          "total": 10
+        },
+        "S1": {
+          "exact": 0,
+          "adjacent": 0,
+          "wrong": 12,
+          "total": 12
+        },
+        "S2": {
+          "exact": 0,
+          "adjacent": 17,
+          "wrong": 0,
+          "total": 17
+        },
+        "S3": {
+          "exact": 75,
+          "adjacent": 0,
+          "wrong": 0,
+          "total": 75
+        },
+        "S4": {
+          "exact": 0,
+          "adjacent": 74,
+          "wrong": 0,
+          "total": 74
+        },
+        "S5": {
+          "exact": 0,
+          "adjacent": 0,
+          "wrong": 12,
+          "total": 12
+        }
+      },
+      "wrong_cases": [
+        [
+          "S0",
+          "S3",
+          "list files here"
+        ],
+        [
+          "S0",
+          "S3",
+          "what day is it"
+        ],
+        [
+          "S0",
+          "S3",
+          "print hello"
+        ],
+        [
+          "S0",
+          "S3",
+          "yes or no"
+        ],
+        [
+          "S0",
+          "S3",
+          "cat README.md"
+        ],
+        [
+          "S0",
+          "S3",
+          "pwd"
+        ],
+        [
+          "S0",
+          "S3",
+          "git status"
+        ],
+        [
+          "S0",
+          "S3",
+          "what is 2+2"
+        ],
+        [
+          "S0",
+          "S3",
+          "clear the terminal"
+        ],
+        [
+          "S0",
+          "S3",
+          "show the current branch"
+        ]
+      ]
+    },
+    "Random (seed=42)": {
+      "total": 200,
+      "exact": 34,
+      "adjacent": 60,
+      "wrong": 106,
+      "exact_pct": 17.0,
+      "weighted": 0.32,
+      "per_tier": {
+        "S0": {
+          "exact": 3,
+          "adjacent": 3,
+          "wrong": 4,
+          "total": 10
+        },
+        "S1": {
+          "exact": 2,
+          "adjacent": 4,
+          "wrong": 6,
+          "total": 12
+        },
+        "S2": {
+          "exact": 1,
+          "adjacent": 6,
+          "wrong": 10,
+          "total": 17
+        },
+        "S3": {
+          "exact": 11,
+          "adjacent": 26,
+          "wrong": 38,
+          "total": 75
+        },
+        "S4": {
+          "exact": 16,
+          "adjacent": 21,
+          "wrong": 37,
+          "total": 74
+        },
+        "S5": {
+          "exact": 1,
+          "adjacent": 0,
+          "wrong": 11,
+          "total": 12
+        }
+      },
+      "wrong_cases": [
+        [
+          "S0",
+          "S5",
+          "list files here"
+        ],
+        [
+          "S0",
+          "S5",
+          "yes or no"
+        ],
+        [
+          "S0",
+          "S2",
+          "cat README.md"
+        ],
+        [
+          "S0",
+          "S5",
+          "clear the terminal"
+        ],
+        [
+          "S1",
+          "S5",
+          "what does this regex do: ^\\d{3}-\\d{4}$"
+        ],
+        [
+          "S1",
+          "S5",
+          "rename variable foo to user_count in this function"
+        ],
+        [
+          "S1",
+          "S4",
+          "show the git log for main"
+        ],
+        [
+          "S1",
+          "S4",
+          "convert this JSON key from camelCase to snake_case"
+        ],
+        [
+          "S1",
+          "S3",
+          "explain what UPROPERTY does in one sentence"
+        ],
+        [
+          "S1",
+          "S4",
+          "format this datetime as ISO 8601"
+        ]
+      ]
+    }
+  },
+  "metadata": {
+    "methodology": "exact + adjacent + wrong scoring; weighted = exact + 0.5*adjacent",
+    "baseline_list": [
+      "Brain (v2.6.3)",
+      "Keyword-only",
+      "Length-only",
+      "Majority-class (always S3)",
+      "Random (seed=42)"
+    ]
+  }
+}

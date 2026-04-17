@@ -26,10 +26,21 @@ Reproduce the benchmark locally: `python toke/automations/brain/eval/brain_vs_ba
 
 ## Install
 
-Three commands. ~2 minutes.
+### Option A — Claude Code plugin (recommended, ~30 seconds)
+
+Inside a Claude Code session:
+
+```
+/plugin marketplace add itsribbZ/godspeed
+/plugin install godspeed@itsribbZ-godspeed
+```
+
+That's it. The plugin ships the full engine — all 16 skills, 2 commands, 5 hooks, and the Python automation stack land in Claude Code's plugin cache and register automatically. No shell profile edits, no manifest pasting, no restart required.
+
+### Option B — install.sh (for users who prefer `~/.claude/skills/` install)
 
 ```bash
-git clone https://github.com/<your-username>/godspeed
+git clone https://github.com/itsribbZ/godspeed
 cd godspeed
 
 # macOS / Linux / Git Bash on Windows
@@ -45,6 +56,8 @@ The installer:
 3. Runs the 65-test verification suite
 4. Prints the `settings.json` hook block you need to paste
 
+Use Option B if you want the skills/commands accessible outside of the plugin namespace (e.g. you want `zeus` instead of `godspeed:zeus`) or if Claude Code's plugin system isn't available in your environment.
+
 ---
 
 ## Quick start
@@ -53,7 +66,9 @@ Four steps from fresh install to running Godspeed on a prompt.
 
 ### 1. Wire up the hooks (one-time)
 
-After install, do three things, in this order:
+**Plugin install (Option A):** hooks auto-register. Skip to the verification step below.
+
+**install.sh install (Option B):** do three things, in this order:
 
 1. **Paste** the hook block the installer printed into `~/.claude/settings.json` (under the `hooks` key — merge with any existing hooks, don't replace).
 2. **Export** `TOKE_ROOT` in your shell profile. The installer prints the exact path — add it to `~/.bashrc`, `~/.zshrc`, or your PowerShell profile:
@@ -62,7 +77,7 @@ After install, do three things, in this order:
    ```
 3. **Restart** Claude Code. This reloads the hooks and picks up the new env var.
 
-**Verify the install is live:**
+**Verify either install is live:**
 
 ```
 /brain-score "refactor my distributed cache across 4 files"

@@ -1,0 +1,82 @@
+{
+  "classify": {
+    "demos": [
+      {
+        "prompt_text": "pwd",
+        "tier": "S0",
+        "reasoning": "The prompt 'pwd' is a trivial single-command lookup requiring a one-word/one-line answer about the current directory command."
+      },
+      {
+        "prompt_text": "refactor this for-loop into a list comprehension",
+        "tier": "S2",
+        "reasoning": "Refactoring a for-loop into a list comprehension is a straightforward single-construct code change that fits S2 well."
+      },
+      {
+        "prompt_text": "prove the current tier threshold values are optimal for the golden set or find better ones",
+        "tier": "S5",
+        "reasoning": "This task requires exhaustive optimization over a large parameter space (threshold values) validated against a golden set, involving long-context synthesis, iterative search, and systematic evaluation"
+      },
+      {
+        "prompt_text": "add caching to the API responses",
+        "tier": "S3",
+        "reasoning": "Adding caching to API responses requires multi-step reasoning involving cache strategy selection, middleware/interceptor implementation, cache invalidation logic, and likely modifications across multi"
+      },
+      {
+        "prompt_text": "add sorting to all the table columns",
+        "tier": "S3",
+        "reasoning": "Adding sorting to all table columns requires multi-step implementation across multiple columns with state management, event handlers, and sort logic \u2014 far beyond trivial S0 complexity."
+      },
+      {
+        "prompt_text": "add undo support for the editor actions",
+        "tier": "S4",
+        "reasoning": "Adding undo support to an editor requires implementing a command pattern or history stack across multiple files/components, which is a significant architecture-level feature, not a trivial S0 task."
+      },
+      {
+        "prompt_text": "wire up email notifications for new signups",
+        "tier": "S3",
+        "reasoning": "Wiring up email notifications for new signups requires multi-step implementation including event hooks, email service integration, template creation, and configuration \u2014 this is at minimum S3 complexi"
+      },
+      {
+        "prompt_text": "what breaks if we remove the uncertainty escalation logic entirely",
+        "tier": "S4",
+        "reasoning": "This is an architectural impact analysis question requiring cross-system reasoning about what depends on uncertainty escalation logic, its downstream effects, and failure modes \u2014 demanding S4-level mu"
+      },
+      {
+        "prompt_text": "add a --json output mode to all CLI commands so scripts can parse the results",
+        "tier": "S4",
+        "reasoning": "Adding --json output mode to ALL CLI commands requires cross-file refactoring across multiple command modules, designing a consistent JSON schema, modifying output handling throughout the codebase \u2014 t"
+      },
+      {
+        "prompt_text": "replace the polling with server-sent events for real-time dashboard updates and handle reconnection",
+        "tier": "S4",
+        "reasoning": "Replacing polling with SSE requires architectural changes across server and client code, implementing reconnection logic with exponential backoff, handling connection state management, and likely modi"
+      },
+      {
+        "prompt_text": "find every hardcoded Windows path assumption in the Brain codebase that would break on macOS or Linux",
+        "tier": "S4",
+        "reasoning": "Finding every hardcoded Windows path assumption across an entire codebase requires cross-file analysis, pattern recognition (backslashes, drive letters, Windows-specific APIs), and understanding of co"
+      },
+      {
+        "prompt_text": "add retry logic with exponential backoff to the HTTP client wrapper",
+        "tier": "S3",
+        "reasoning": "Adding retry logic with exponential backoff to an HTTP client wrapper is a well-defined, moderate-complexity task involving 10-30 lines of code with clear patterns, fitting S3 rather than S4 which is "
+      },
+      {
+        "prompt_text": "convert the standalone script into a proper CLI with subcommands, help text, and argument validation",
+        "tier": "S3",
+        "reasoning": "Converting a standalone script to a CLI with subcommands, help text, and argument validation is a moderate multi-step task typically handled within a single file using argparse/click, fitting S3 rathe"
+      },
+      {
+        "prompt_text": "implement a cost tracker that reads decisions.jsonl, aggregates by model and week, and outputs deltas as JSON",
+        "tier": "S3",
+        "reasoning": "This is a multi-step task involving file parsing, aggregation logic, and JSON output but fits within S3 scope (moderate complexity, single file implementation with clear requirements) rather than requ"
+      },
+      {
+        "prompt_text": "design a retry strategy for the notification service with configurable backoff and dead letter handling",
+        "tier": "S3",
+        "reasoning": "Designing a retry strategy with configurable backoff and dead letter handling requires multi-step reasoning, moderate implementation complexity (10-50 lines), and dependency chains between retry logic"
+      }
+    ],
+    "instructions": "Route a user prompt to the correct Claude model cost tier (S0-S5). Short prompts can be high tier if they describe multi-step or architectural work. Under-routing is worse than over-routing."
+  }
+}

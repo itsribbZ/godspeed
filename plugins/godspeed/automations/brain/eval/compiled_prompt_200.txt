@@ -1,0 +1,99 @@
+# Brain Compiled Classifier Prompt v2.0
+# Compiled: 2026-04-11 22:18:50
+# Source: Manual compilation from 200-prompt audit (GEPA-equivalent)
+# Method: Algorithmic demo selection targeting S3/S4 boundary failures
+
+## Task
+Route a user prompt to the correct Claude model cost tier (S0-S5).
+
+## Tier Definitions
+S0 (Haiku low): Trivial -- one-word answers, lookups, yes/no, single shell commands
+S1 (Haiku med): Short Q&A, 1-2 sentence explanations, simple factual answers
+S2 (Sonnet med): Single-file code edits, 3-10 line patches, targeted fixes
+S3 (Sonnet+thinking): Multi-step reasoning, 10-50 lines across 1-2 files, integration work
+S4 (Opus+thinking): Architecture design, novel debugging, cross-file refactors, system design
+S5 (Opus 1M): Overnight runs, long-context synthesis, full-system audits
+
+## Critical Boundary Rules
+- Short prompts can be HIGH tier. "add caching" sounds S0 but requires cache strategy, invalidation, TTL = S3.
+- "design" does NOT always mean S4. Designing standard patterns (retry, pagination, logging) = S3.
+- Cross-file refactoring and plugin architectures = S4 even if described briefly.
+- "fix" or "add" can be S4 if the fix requires understanding system-wide interactions.
+- Under-routing is WORSE than over-routing. When uncertain, route UP.
+
+## Examples
+
+### Example 1
+  prompt_text: pwd
+  tier: S0
+  reasoning: The prompt 'pwd' is a trivial single-command lookup requiring a one-word/one-line answer about the current directory command.
+
+### Example 2
+  prompt_text: refactor this for-loop into a list comprehension
+  tier: S2
+  reasoning: Refactoring a for-loop into a list comprehension is a straightforward single-construct code change that fits S2 well.
+
+### Example 3
+  prompt_text: prove the current tier threshold values are optimal for the golden set or find better ones
+  tier: S5
+  reasoning: This task requires exhaustive optimization over a large parameter space (threshold values) validated against a golden set, involving long-context synt
+
+### Example 4
+  prompt_text: add caching to the API responses
+  tier: S3
+  reasoning: Adding caching to API responses requires multi-step reasoning involving cache strategy selection, middleware/interceptor implementation, cache invalid
+
+### Example 5
+  prompt_text: add sorting to all the table columns
+  tier: S3
+  reasoning: Adding sorting to all table columns requires multi-step implementation across multiple columns with state management, event handlers, and sort logic —
+
+### Example 6
+  prompt_text: add undo support for the editor actions
+  tier: S4
+  reasoning: Adding undo support to an editor requires implementing a command pattern or history stack across multiple files/components, which is a significant arc
+
+### Example 7
+  prompt_text: wire up email notifications for new signups
+  tier: S3
+  reasoning: Wiring up email notifications for new signups requires multi-step implementation including event hooks, email service integration, template creation, 
+
+### Example 8
+  prompt_text: what breaks if we remove the uncertainty escalation logic entirely
+  tier: S4
+  reasoning: This is an architectural impact analysis question requiring cross-system reasoning about what depends on uncertainty escalation logic, its downstream 
+
+### Example 9
+  prompt_text: add a --json output mode to all CLI commands so scripts can parse the results
+  tier: S4
+  reasoning: Adding --json output mode to ALL CLI commands requires cross-file refactoring across multiple command modules, designing a consistent JSON schema, mod
+
+### Example 10
+  prompt_text: replace the polling with server-sent events for real-time dashboard updates and handle reconnection
+  tier: S4
+  reasoning: Replacing polling with SSE requires architectural changes across server and client code, implementing reconnection logic with exponential backoff, han
+
+### Example 11
+  prompt_text: find every hardcoded Windows path assumption in the Brain codebase that would break on macOS or Linux
+  tier: S4
+  reasoning: Finding every hardcoded Windows path assumption across an entire codebase requires cross-file analysis, pattern recognition (backslashes, drive letter
+
+### Example 12
+  prompt_text: add retry logic with exponential backoff to the HTTP client wrapper
+  tier: S3
+  reasoning: Adding retry logic with exponential backoff to an HTTP client wrapper is a well-defined, moderate-complexity task involving 10-30 lines of code with c
+
+### Example 13
+  prompt_text: convert the standalone script into a proper CLI with subcommands, help text, and argument validation
+  tier: S3
+  reasoning: Converting a standalone script to a CLI with subcommands, help text, and argument validation is a moderate multi-step task typically handled within a 
+
+### Example 14
+  prompt_text: implement a cost tracker that reads decisions.jsonl, aggregates by model and week, and outputs deltas as JSON
+  tier: S3
+  reasoning: This is a multi-step task involving file parsing, aggregation logic, and JSON output but fits within S3 scope (moderate complexity, single file implem
+
+### Example 15
+  prompt_text: design a retry strategy for the notification service with configurable backoff and dead letter handling
+  tier: S3
+  reasoning: Designing a retry strategy with configurable backoff and dead letter handling requires multi-step reasoning, moderate implementation complexity (10-50

@@ -44,7 +44,7 @@ When the user says `godspeed`, this mode stays active for the whole prompt. It c
 Fires FIRST on every invocation. Increments the counter and auto-runs `brain scan` every 33 runs (cost state + regression alerts + tier drift).
 
 ```bash
-python $TOKE_ROOT/automations/brain/brain_cli.py godspeed-tick 33
+python ${CLAUDE_PLUGIN_ROOT}/automations/brain/brain_cli.py godspeed-tick 33
 ```
 
 - **Silent tick (32 of 33 runs):** one-line status, proceed.
@@ -57,7 +57,7 @@ python $TOKE_ROOT/automations/brain/brain_cli.py godspeed-tick 33
 Classify the incoming task BEFORE triage. Cheap (~5-15ms keyword+regex, no API call).
 
 ```bash
-python $TOKE_ROOT/automations/brain/brain_cli.py score "<user prompt>"
+python ${CLAUDE_PLUGIN_ROOT}/automations/brain/brain_cli.py score "<user prompt>"
 ```
 
 **Output handling:**
@@ -69,7 +69,7 @@ python $TOKE_ROOT/automations/brain/brain_cli.py score "<user prompt>"
 Every S3+ Zeus dispatch MUST terminate with ONE atomic command:
 
 ```bash
-python $TOKE_ROOT/automations/homer/zeus/zeus_cli.py gate-write \
+python ${CLAUDE_PLUGIN_ROOT}/automations/homer/zeus/zeus_cli.py gate-write \
     --topic "Zeus run: <short label>" \
     --synthesis-file /tmp/zeus_synthesis.md \
     --citations "file:line,session:<id>"
