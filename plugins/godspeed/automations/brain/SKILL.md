@@ -1,26 +1,26 @@
 ---
 name: brain
-description: Toke Brain workbench — the model routing classifier and savings analyzer. Invoke ANY time the user says "brain scan", "brain score", "brain audit", "brain audit-skills", "brain pin", "brain apply-env", "brain test", or "/brain [subcommand]". Classifies tasks by severity (S0-S5) to route between Haiku/Sonnet/Opus while preserving Opus quality via hard guardrails. Reads from stats-cache.json and telemetry to project routing savings. Source code lives at ~/Desktop/T1/Toke/automations/brain/.
+description: Brain workbench — the model routing classifier and savings analyzer. Invoke ANY time the user says "brain scan", "brain score", "brain audit", "brain audit-skills", "brain pin", "brain apply-env", "brain test", or "/brain [subcommand]". Classifies tasks by severity (S0-S5) to route between Haiku/Sonnet/Opus while preserving Opus quality via hard guardrails. Reads from telemetry to project routing savings.
 model: sonnet
 effort: medium
 ---
 
-# Toke Brain — Workbench
+# Brain — Workbench
 
-This skill is the user-facing entry point for the Toke model router. All
+This skill is the user-facing entry point for the Brain model router. All
 commands are thin wrappers around `brain_cli.py`.
 
 ## Canonical location
-`~/Desktop/T1/Toke/automations/brain/brain_cli.py`
+`${CLAUDE_PLUGIN_ROOT}/automations/brain/brain_cli.py`
 
 The Brain has three layers:
 1. **Classifier** — `severity_classifier.py` (pure Python, stdlib only)
 2. **Manifest** — `routing_manifest.toml` (single source of truth for weights, tiers, guardrails, skill assignments)
 3. **Workbench** — `brain_cli.py` (this skill's backend)
 
-Plus two hooks that wire into `~/.claude/settings.json`:
+Plus two hooks that wire into Claude Code:
 - `brain_advisor.sh` (UserPromptSubmit) — logs classification + emits model advisory
-- `brain_telemetry.sh` (PostToolUse) — logs tool call metadata for `brain scan`
+- `brain_tools_hook.sh` (PostToolUse) — logs tool call metadata for `brain scan`
 
 ## Commands
 
@@ -28,21 +28,21 @@ Plus two hooks that wire into `~/.claude/settings.json`:
 30-day cost analysis + routing savings projection. Reads `~/.claude/stats-cache.json` and applies current Anthropic pricing to compute actual cost, then projects what would be saved by routing 50% of Opus → Sonnet and 20% → Haiku.
 
 ```bash
-python3 "~/Desktop/T1/Toke/automations/brain/brain_cli.py" scan
+python "${CLAUDE_PLUGIN_ROOT}/automations/brain/brain_cli.py" scan
 ```
 
 ### `brain score TEXT`
 Classify an arbitrary prompt and show the full signal breakdown with bar chart.
 
 ```bash
-python3 "~/Desktop/T1/Toke/automations/brain/brain_cli.py" score "refactor EXOSeedSubsystem across 5 files"
+python "${CLAUDE_PLUGIN_ROOT}/automations/brain/brain_cli.py" score "refactor auth module across 5 files"
 ```
 
 ### `brain audit-skills`
 Show every skill and its assigned routing tier. Flags any skills in `~/.claude/skills/` that don't have a tier assigned yet.
 
 ```bash
-python3 "~/Desktop/T1/Toke/automations/brain/brain_cli.py" audit-skills
+python "${CLAUDE_PLUGIN_ROOT}/automations/brain/brain_cli.py" audit-skills
 ```
 
 ### `brain pin SKILL [--write]`
@@ -50,10 +50,10 @@ Add `model:` and `effort:` frontmatter to a skill file based on its assigned tie
 
 ```bash
 # Dry-run
-python3 "~/Desktop/T1/Toke/automations/brain/brain_cli.py" pin sitrep
+python "${CLAUDE_PLUGIN_ROOT}/automations/brain/brain_cli.py" pin verify
 
 # Apply
-python3 "~/Desktop/T1/Toke/automations/brain/brain_cli.py" pin sitrep --write
+python "${CLAUDE_PLUGIN_ROOT}/automations/brain/brain_cli.py" pin verify --write
 ```
 
 ### `brain apply-env`
@@ -63,14 +63,14 @@ Print shell env exports to source. These enable Zone 2 automatic routing:
 - `ANTHROPIC_DEFAULT_HAIKU_MODEL` — pin background Haiku version
 
 ```bash
-python3 "~/Desktop/T1/Toke/automations/brain/brain_cli.py" apply-env
+python "${CLAUDE_PLUGIN_ROOT}/automations/brain/brain_cli.py" apply-env
 ```
 
 ### `brain test`
-Run the classifier smoke tests. 16 sample prompts → expected tiers.
+Run the classifier smoke tests. Sample prompts → expected tiers.
 
 ```bash
-python3 "~/Desktop/T1/Toke/automations/brain/brain_cli.py" test
+python "${CLAUDE_PLUGIN_ROOT}/automations/brain/brain_cli.py" test
 ```
 
 ## Workflow
@@ -80,24 +80,13 @@ python3 "~/Desktop/T1/Toke/automations/brain/brain_cli.py" test
 3. **Test**: `brain test` to confirm the classifier is behaving correctly
 4. **Tune**: edit `routing_manifest.toml` directly (weights, thresholds, guardrails, skill tiers) — no code changes needed
 5. **Enable Zone 2**: `brain apply-env`, add to shell rc, restart terminal
-6. **Pin skills**: `brain pin SKILLNAME --write` for each skill the user wants to explicitly route
-7. **Wire hooks** (optional): follow `integration_guide.md` to add `brain_advisor.sh` + `brain_telemetry.sh` to `settings.json`
-8. **Monitor**: run `brain scan` weekly to track actual cost vs projected savings
-
-## Design contract
-`~/Desktop/T1/Toke/research/brain_synthesis_2026-04-10.md`
-
-## Integration guide
-`~/Desktop/T1/Toke/automations/brain/integration_guide.md`
-
-## Rollback guide
-`~/Desktop/T1/Toke/automations/brain/rollback_guide.md`
+6. **Pin skills**: `brain pin SKILLNAME --write` for each skill you want explicitly routed
+7. **Monitor**: run `brain scan` weekly to track actual cost vs projected savings
 
 ## Hard constraint
 Claude Code hooks **cannot** force-switch the main session model for the next
-turn. This is a documented Claude Code limitation (see
-`research/agent_a_model_selection_mechanisms_2026-04-10.md`). The Brain's main-
-session routing is advisory only — it logs and suggests. All automatic routing
+turn. This is a documented Claude Code limitation. The Brain's main-session
+routing is advisory only — it logs and suggests. All automatic routing
 happens in Zone 2:
 - Subagent overrides via `CLAUDE_CODE_SUBAGENT_MODEL` env var
 - Per-skill overrides via `model:` frontmatter

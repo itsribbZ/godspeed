@@ -62,7 +62,7 @@ SACRED_RULE_PATTERNS = {
             r"\bunilaterally (deleted|removed)\b",
         ],
         "safe_phrases": [
-            "backed up", "with explicit consent", "per jacob's direction",
+            "backed up", "with explicit consent", "per the user's direction",
             "greenlit", "awaiting approval", "explicit greenlight",
         ],
         "severity": "hard",

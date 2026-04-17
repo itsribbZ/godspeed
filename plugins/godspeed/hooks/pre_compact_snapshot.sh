@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
-# Toke PreCompact Hook — delegates to Python for clean JSON handling
-exec python3 -u -c "
+# PreCompact Hook — delegates to Python for clean JSON handling
+# Cross-OS Python detection: python3 on Linux/Mac, python on Windows git-bash.
+PY=$(command -v python3 2>/dev/null || command -v python 2>/dev/null)
+[ -n "$PY" ] || exit 0
+
+exec "$PY" -u -c "
 import json, sys, pathlib, datetime
 
 TELEMETRY = pathlib.Path.home() / '.claude' / 'telemetry' / 'brain'

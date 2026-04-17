@@ -19,12 +19,12 @@ TOKE_ROOT="${TOKE_ROOT:-${CLAUDE_PLUGIN_ROOT:-$HOME/.toke}}"
 BREAKDOWN="$TOKE_ROOT/tokens/per_turn_breakdown.py"
 COST_LOG="$HOME/.claude/telemetry/brain/session_costs.log"
 
+# Cross-OS Python detection: python3 on Linux/Mac, python on Windows git-bash.
+PY=$(command -v python3 2>/dev/null || command -v python 2>/dev/null)
+
 # Bail if tools aren't available
 [ -f "$BREAKDOWN" ] || exit 0
-command -v python >/dev/null 2>&1 || command -v python3 >/dev/null 2>&1 || exit 0
-
-# Get the Python executable
-PY=$(command -v python3 2>/dev/null || command -v python 2>/dev/null)
+[ -n "$PY" ] || exit 0
 
 # Read session_id from hook stdin
 STDIN_DATA=$(cat)

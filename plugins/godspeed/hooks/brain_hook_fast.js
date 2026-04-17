@@ -20,9 +20,9 @@ const path = require('path');
 const os = require('os');
 
 const HOME = os.homedir();
-// Portability (2026-04-17): TOKE_ROOT env override lets this hook work from any
-// clone location. Fallback to the historical layout so nothing breaks for the user.
-const TOKE_ROOT = process.env.TOKE_ROOT || path.join(HOME, 'Desktop', 'T1', 'Toke');
+// Portability: prefer CLAUDE_PLUGIN_ROOT (bundled engine), then TOKE_ROOT env
+// override (install.sh users), finally $HOME/.toke fallback.
+const TOKE_ROOT = process.env.TOKE_ROOT || process.env.CLAUDE_PLUGIN_ROOT || path.join(HOME, '.toke');
 const BRAIN_DIR = path.join(TOKE_ROOT, 'automations', 'brain');
 const TELEMETRY_DIR = path.join(HOME, '.claude', 'telemetry', 'brain');
 const MANIFEST_JSON = path.join(BRAIN_DIR, 'routing_manifest.json');
@@ -123,18 +123,11 @@ function computeSignals(prompt, contextTokens, manifest) {
 // Guardrail evaluation
 // ---------------------------------------------------------------------------
 
-// v2.4: domain detection from CWD path (mirrors Python _detect_project_domain)
+// Domain detection from CWD path (mirrors Python _detect_project_domain)
 function detectProjectDomain(cwd) {
   if (!cwd) return null;
   const lower = cwd.toLowerCase().replace(/\\/g, '/');
-  if (lower.includes('sworder') || lower.includes('/myproject/') || lower.includes('.uproject')) return 'ue5';
-  if (lower.includes('toke')) return 'toke';
-  if (lower.includes('quantified')) return 'quantified';
-  if (lower.includes('forge3d')) return 'forge3d';
-  if (lower.includes('buddy')) return 'buddy';
-  if (lower.includes('enigma')) return 'enigma';
-  if (lower.includes('ribbz')) return 'ribbz';
-  if (lower.includes('career-ops') || lower.includes('career_ops')) return 'career-ops';
+  if (lower.includes('.uproject')) return 'ue5';
   return null;
 }
 

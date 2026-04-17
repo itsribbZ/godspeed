@@ -1,0 +1,16 @@
+# Enforce LF line endings for shell scripts, Python, JavaScript, and JSON.
+# Without this, Windows git checkouts can convert LF -> CRLF and break
+# `#!/usr/bin/env bash` shebangs when hooks execute on Linux/Mac systems.
+*.sh     text eol=lf
+*.py     text eol=lf
+*.js     text eol=lf
+*.json   text eol=lf
+*.toml   text eol=lf
+*.md     text eol=lf
+*.yml    text eol=lf
+*.yaml   text eol=lf
+
+# Binary files — never auto-convert
+*.db     binary
+*.pyc    binary
+*.bin    binary

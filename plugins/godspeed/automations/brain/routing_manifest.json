@@ -270,8 +270,7 @@
         ".uproject",
         "UE5",
         "UE 5",
-        "unreal engine",
-        "sworder"
+        "unreal engine"
       ],
       "min_file_refs": 1,
       "require_all": true,
@@ -289,8 +288,7 @@
         ".uproject",
         "UE5",
         "UE 5",
-        "unreal engine",
-        "sworder"
+        "unreal engine"
       ],
       "min_score": 0.22
     },
@@ -728,44 +726,17 @@
     }
   },
   "skills": {
-    "blueprint": "S4",
-    "professor": "S4",
-    "profTeam": "S4",
-    "holy-trinity": "S4",
-    "cycle": "S4",
     "godspeed": "S4",
-    "devTeam": "S4",
-    "analyst": "S4",
-    "ue-knowledge": "S4",
-    "bionics": "S4",
-    "debug": "S4",
-    "marketbot": "S4",
+    "zeus": "S4",
+    "oracle": "S4",
+    "mnemos": "S4",
+    "sybil": "S4",
+    "brain": "S2",
     "verify": "S2",
     "close-session": "S2",
-    "init": "S2",
-    "sworder-init": "S2",
-    "quantified-init": "S2",
-    "forge3d-init": "S2",
-    "buddy-init": "S2",
-    "enigma-init": "S2",
-    "ribbz-init": "S2",
-    "career-ops-init": "S2",
-    "toke-init": "S2",
-    "ue-knowledge-init": "S2",
-    "organizer": "S2",
-    "finder": "S2",
-    "reference": "S2",
-    "blend-master": "S2",
-    "player1": "S2",
-    "scanner": "S2",
-    "simplify": "S2",
-    "brain": "S2",
-    "update-config": "S2",
-    "sitrep": "S1",
-    "pulse": "S1",
-    "find": "S1",
-    "knowledge-router": "S1",
-    "keybindings-help": "S1"
+    "calliope": "S2",
+    "clio": "S2",
+    "urania": "S2"
   },
   "models": {
     "haiku": {

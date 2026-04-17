@@ -96,7 +96,7 @@ def _silence_hf_and_transformers() -> None:
       - BertModel LOAD REPORT (ANSI-bold) + UNEXPECTED row
       - Notes block
     Those ANSI escape sequences leak into terminals that don't render them
-    cleanly and clutter the user's UI. Standard fix: env vars + logger levels.
+    cleanly and clutter the user's terminal. Standard fix: env vars + logger levels.
     Applied once per process, before the first SentenceTransformer() call.
     """
     import os

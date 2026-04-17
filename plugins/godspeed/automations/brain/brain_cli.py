@@ -545,19 +545,11 @@ def cmd_hook(args: list[str]) -> int:
     # Simple prefix match covers all skill invocations (direct + slash command).
     _SKILL_TRIGGERS: dict[str, str] = {
         "godspeed": "godspeed", "/godspeed": "godspeed",
-        "holy-trinity": "holy-trinity", "/holy-trinity": "holy-trinity",
-        "devteam": "devTeam", "/devteam": "devTeam",
-        "profteam": "profTeam", "/profteam": "profTeam",
-        "blueprint": "blueprint", "/blueprint": "blueprint",
-        "professor": "professor", "/professor": "professor",
-        "bionics": "bionics", "/bionics": "bionics",
-        "debug": "debug", "/debug": "debug",
-        "init": "init", "/init": "init",
+        "zeus": "zeus", "/zeus": "zeus",
         "verify": "verify", "/verify": "verify",
-        "sitrep": "sitrep", "/sitrep": "sitrep",
         "close-session": "close-session", "/close-session": "close-session",
-        "toke init": "toke-init",
         "brain scan": "brain", "brain audit": "brain", "brain history": "brain",
+        "brain score": "brain", "brain advise": "brain",
     }
     inferred_skill: str | None = None
     _prompt_lower = prompt_text.strip().lower()

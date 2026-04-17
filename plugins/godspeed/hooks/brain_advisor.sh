@@ -20,26 +20,29 @@ HOOK_JS="$TOKE_ROOT/hooks/brain_hook_fast.js"
 BRAIN_CLI="$TOKE_ROOT/automations/brain/brain_cli.py"
 STDIN_DATA=$(cat)
 
+# Cross-OS Python detection: python3 on Linux/Mac, python on Windows git-bash.
+PY=$(command -v python3 2>/dev/null || command -v python 2>/dev/null)
+
 # Fast path: Node.js (exit 2 = manifest stale, fall back to Python)
 if [ -f "$HOOK_JS" ] && command -v node >/dev/null 2>&1; then
     printf '%s' "$STDIN_DATA" | node "$HOOK_JS" hook
     RC=$?
     [ $RC -ne 2 ] && exit 0
     # RC=2: manifest stale, rebuild and retry
-    python3 "$TOKE_ROOT/automations/brain/manifest_to_json.py" >/dev/null 2>&1
+    [ -n "$PY" ] && "$PY" "$TOKE_ROOT/automations/brain/manifest_to_json.py" >/dev/null 2>&1
     printf '%s' "$STDIN_DATA" | node "$HOOK_JS" hook 2>/dev/null
     exit 0
 fi
 
 # Slow path: Python fallback (if Node unavailable)
 [ -f "$BRAIN_CLI" ] || exit 0
-command -v python3 >/dev/null 2>&1 || exit 0
-printf '%s' "$STDIN_DATA" | python3 "$BRAIN_CLI" hook
+[ -n "$PY" ] || exit 0
+printf '%s' "$STDIN_DATA" | "$PY" "$BRAIN_CLI" hook
 
 # Banner (Python slow path only — Node handles banner internally)
 DECISIONS="$HOME/.claude/telemetry/brain/decisions.jsonl"
-if [ -f "$DECISIONS" ]; then
-    BANNER=$(tail -1 "$DECISIONS" 2>/dev/null | python3 -c "
+if [ -f "$DECISIONS" ] && [ -n "$PY" ]; then
+    BANNER=$(tail -1 "$DECISIONS" 2>/dev/null | "$PY" -c "
 import sys, json
 try:
     d = json.load(sys.stdin)

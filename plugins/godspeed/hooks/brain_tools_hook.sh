@@ -19,6 +19,9 @@ HOOK_JS="$TOKE_ROOT/hooks/brain_hook_fast.js"
 BRAIN_CLI="$TOKE_ROOT/automations/brain/brain_cli.py"
 STDIN_DATA=$(cat)
 
+# Cross-OS Python detection: python3 on Linux/Mac, python on Windows git-bash.
+PY=$(command -v python3 2>/dev/null || command -v python 2>/dev/null)
+
 # Fast path: Node.js
 if [ -f "$HOOK_JS" ] && command -v node >/dev/null 2>&1; then
     printf '%s' "$STDIN_DATA" | node "$HOOK_JS" telemetry >/dev/null 2>&1
@@ -27,7 +30,7 @@ fi
 
 # Slow path: Python fallback
 [ -f "$BRAIN_CLI" ] || exit 0
-command -v python3 >/dev/null 2>&1 || exit 0
-printf '%s' "$STDIN_DATA" | python3 "$BRAIN_CLI" telemetry >/dev/null 2>&1
+[ -n "$PY" ] || exit 0
+printf '%s' "$STDIN_DATA" | "$PY" "$BRAIN_CLI" telemetry >/dev/null 2>&1
 
 exit 0

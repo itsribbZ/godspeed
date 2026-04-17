@@ -257,29 +257,15 @@ def _detect_correction_in_text(text: str, keywords: list[str]) -> bool:
 def _detect_project_domain(cwd: str | None) -> str | None:
     """Detect project domain from the working directory path.
 
-    Returns a domain tag (e.g., "ue5", "toke") or None if unknown.
-    Used to scope guardrails so UE5 guardrails don't fire in non-UE5 projects.
+    Returns a domain tag (currently only "ue5") or None if unknown.
+    Used to scope domain-specific guardrails so they don't fire in unrelated projects.
     """
     if not cwd:
         return None
     cwd_lower = cwd.lower().replace("\\", "/")
-    # UE5 project detection: Sworder project dir or UE5 project structure
-    if any(marker in cwd_lower for marker in ("sworder", "/myproject/", ".uproject")):
+    # UE5 project detection: .uproject file marker in path
+    if ".uproject" in cwd_lower:
         return "ue5"
-    if "toke" in cwd_lower:
-        return "toke"
-    if "quantified" in cwd_lower:
-        return "quantified"
-    if "forge3d" in cwd_lower:
-        return "forge3d"
-    if "buddy" in cwd_lower:
-        return "buddy"
-    if "enigma" in cwd_lower:
-        return "enigma"
-    if "ribbz" in cwd_lower:
-        return "ribbz"
-    if "career-ops" in cwd_lower or "career_ops" in cwd_lower:
-        return "career-ops"
     return None
 
 
