@@ -25,11 +25,13 @@ Mnemos is Homer's memory layer. Zeus (L2) and MUSES (L3) call Mnemos to:
 - **Access:** `MnemosStore.write_core()`, `edit_core()`, `read_core()`
 - **Compaction:** Triggered when over budget. Lowest-priority entries (LOW confidence + oldest use) move to Archival, back-pointer stays in Core at the same key.
 
-### Tier 2: RECALL (searchable)
-- **Where:** `mnemos/recall/recall.db` (SQLite, FTS5 when available, LIKE fallback)
+### Tier 2: RECALL (searchable — hybrid semantic + FTS5)
+- **Where:** `mnemos/recall/recall.db` (SQLite, FTS5 + vector embeddings when available, LIKE fallback)
 - **Budget:** Unlimited (disk-bound)
-- **Purpose:** Full session / conversation history, searchable by keyword.
-- **Access:** `MnemosStore.write_recall()`, `search_recall(query, limit)`, `read_by_id(entry_id)`
+- **Purpose:** Full session / conversation history, searchable by keyword AND semantic similarity.
+- **Access:** `MnemosStore.write_recall()`, `search_recall(query, limit)`, `search_recall_semantic()`, `search_recall_summary()`, `load_full(id)`, `backfill_recall_embeddings()`
+- **Embedding model:** `sentence-transformers/all-MiniLM-L6-v2` (384d, local, zero API cost). If missing, Mnemos falls back transparently to FTS5 — zero breaking changes.
+- **Progressive disclosure:** `search_recall_summary()` returns snippet-only results (Layer 1), `load_full(id)` fetches the full entry on demand (Layer 2). Target: ~10× token reduction on recall.
 - **Compaction:** No auto-compaction. Sleep-time Aurora (P3) may prune after measuring access ROI.
 
 ### Tier 3: ARCHIVAL (cold)
@@ -110,8 +112,27 @@ store.edit_core(
     reason="tightened the claim to 'per Anthropic eval' for clarity",
 )
 
-# Search Recall
+# Search Recall — hybrid (semantic → FTS5 → LIKE)
 results = store.search_recall("orchestrator worker", limit=5)
+
+# Pure semantic search (finds paraphrases even when no keyword matches)
+semantic = store.search_recall_semantic(
+    "how the router intercepts prompts on arrival",
+    limit=5,
+    min_similarity=0.30,  # cosine floor
+)
+# Each hit now includes "similarity": 0.XXXX
+
+# Progressive disclosure — Layer 1: summary only (snippet, no full content)
+summaries = store.search_recall_summary("homer pantheon", limit=5, snippet_chars=80)
+# [{"id": "recall_...", "topic": "...", "snippet": "first 80 chars...", "similarity": 0.71}]
+
+# Progressive disclosure — Layer 2: fetch full content on demand
+full = store.load_full(summaries[0]["id"])
+
+# Backfill vectors on legacy rows (idempotent)
+report = store.backfill_recall_embeddings()
+# {"backfilled": N, "skipped": M, "total": N+M}
 
 # Compact Core if over budget (fires automatically, safe to call unconditionally)
 compaction = store.compact_if_over_budget()
@@ -178,5 +199,6 @@ All 13 rules. Rule 1 (truthful) is enforced at the citation level — untraceabl
 - **P2 shipped 2026-04-11** — mnemos.py + SKILL.md + test_mnemos.py
 - **Three tiers live:** Core + Recall (SQLite FTS5) + Archival
 - **Citation enforcement active** on all write paths
-- **Test coverage:** 35 smoke tests across citation validation / Core ops / Recall ops / Archival ops / Facade
-- **Not yet integrated with Zeus** — Zeus's Phase 5 memory write still uses the fallback `_learnings.md` entry path. Zeus↔Mnemos wire-up comes with Oracle (L7) in P3, since both are "post-synthesis" layers.
+- **Vector embeddings + progressive disclosure shipped 2026-04-17** — `all-MiniLM-L6-v2` local embeddings, hybrid semantic+FTS5 search, `search_recall_summary()`/`load_full()` progressive disclosure pair. Production recall.db backfilled (2/2 rows).
+- **Test coverage:** 45 smoke tests across citation validation / Core ops / Recall ops / Archival ops / Vector search / Progressive disclosure / Facade (35 original + 10 new)
+- **Integrated with Zeus** via `zeus_pipeline.gate_and_write()` — Oracle score gates Mnemos writes; HARD_FAIL blocks recall+archival persistence.

@@ -8,7 +8,7 @@ model: opus
 
 > Zeus decomposes, delegates, and synthesizes. Zeus never executes leaf work directly — he commands MUSES workers to do that. Zeus is the conductor, not the orchestra.
 
-**Status:** P0 shipped 2026-04-11. MUSES (L3) and SYBIL (L4) are P1-pending — until they exist, Zeus falls back to sequential execution. Document both modes below.
+**Status:** P0 shipped 2026-04-11. MUSES (L3) shipped 2026-04-16 (Calliope, Clio, Urania live). SYBIL (L4) shipped 2026-04-12d. Oracle (L7) shipped 2026-04-12d. Full Homer 8/8 pantheon operational. Zeus now dispatches real parallel MUSES on Sonnet via the `Agent` tool.
 
 ---
 
@@ -47,7 +47,7 @@ Every phase writes a VAULT checkpoint update so compaction recovery works at any
 ## Phase -1: Tick (inherited from godspeed)
 
 ```bash
-python ~/Desktop/T1/Toke/automations/brain/brain_cli.py godspeed-tick 33
+python $TOKE_ROOT/automations/brain/brain_cli.py godspeed-tick 33
 ```
 
 Fires the shared godspeed counter. Zeus and godspeed both count against the same 33-tick auto-scan threshold. No separate Zeus counter — they share telemetry so audit cadence stays coherent.
@@ -143,40 +143,96 @@ Zeus waits for all MUSES to return. Synthesis follows Anthropic's CitationAgent 
 - **Urania:** Add working commands to `proven_queries`, snapshot metrics to `metric_cache`
 Use Edit tool (not Write) on the JSON files — Sacred Rule #7.
 
-## Phase 4: Eval (Oracle — LIVE)
+## Phases 4 + 5: Gate-and-Write (Oracle → Mnemos, ONE atomic command)
 
-Zeus scores the synthesized output via Oracle. Run this Bash command after Phase 3 synthesis:
+> **v2.0 (2026-04-17):** Phases 4 and 5 are now a single atomic operation via `zeus gate-write`. Before v2.0, Zeus documented them as two separate Bash commands — a fragile pattern where the model could skip Phase 5 silently, bypass the Oracle gate, or run them in the wrong order. The new command enforces the sacred ordering in code: Oracle scores FIRST, Mnemos writes ONLY if the verdict is PASS or SOFT_FAIL, HARD_FAIL blocks the write entirely.
+
+### The command
+
+After Phase 3 produces the synthesis, write it to a temp file (or pipe it via stdin) and run:
 
 ```bash
-python ~/Desktop/T1/Toke/automations/homer/oracle/oracle.py score "<synthesis output file or text>"
+python $TOKE_ROOT/automations/homer/zeus/zeus_cli.py gate-write \
+    --topic "Zeus run: <short label>" \
+    --synthesis-file /tmp/zeus_synthesis_<session>.md \
+    --citations "file:line,session:<id>,<more…>"
 ```
 
-Oracle returns a JSON `ScoreReport` with `verdict` (PASS / SOFT_FAIL / HARD_FAIL), per-rule checks, rubric score, and theater flags.
+Or pipe directly (useful when the synthesis is still in-memory):
 
-**Decision logic:**
-- `verdict == "PASS"` → proceed to Phase 5
-- `verdict == "SOFT_FAIL"` → proceed but flag to the user in the reconciliation report
-- `verdict == "HARD_FAIL"` → return to Phase 1 for re-plan with Oracle's `sacred_rule_checks` attached as constraint context
-
-Oracle scores against 10 text-detectable Sacred Rules (Rules 10 godspeed-trigger, 11 ask-don't-guess, and 12 rosetta-update are structural/runtime checks not detectable from output text).
-
-## Phase 5: Memory (Mnemos — LIVE)
-
-Zeus writes the distilled synthesis to Mnemos. Run these after Phase 4 passes:
-
-**Write the key finding to Core (context-resident, ~5K budget):**
 ```bash
-python ~/Desktop/T1/Toke/automations/homer/mnemos/mnemos.py write-core "<distilled pattern>" "<file:line citation>" HIGH
+echo "<synthesis text>" | python $TOKE_ROOT/automations/homer/zeus/zeus_cli.py gate-write-stdin \
+    --topic "Zeus run: <short label>" \
+    --citations "file:line,session:<id>"
 ```
 
-**Write the full run narrative to Recall (searchable):**
+### What it does internally
+
+1. Loads Oracle + MnemosStore
+2. Runs `Oracle.score(synthesis, context=…)` → `ScoreReport`
+3. Inspects `report.verdict`:
+   - **PASS** → writes synthesis to Recall, returns `entry_id` + score
+   - **SOFT_FAIL** → writes to Recall with a `warning` flag naming the soft-failed rules
+   - **HARD_FAIL** → NO Mnemos write. Returns `rule_failures` list so Zeus can re-plan.
+4. Emits a JSON `GateResult` to stdout + a one-line summary to stderr
+5. Exit codes: `0` written, `1` HARD_FAIL blocked, `2` write error, `3` input error
+
+### Output contract (always JSON on stdout)
+
+```json
+{
+  "written": true,
+  "verdict": "PASS",
+  "entry_id": "recall_20260417_041612_f0b3",
+  "reason": "",
+  "score": 1.0,
+  "rule_failures": [],
+  "theater_flags": [],
+  "warning": ""
+}
+```
+
+Parse this result in the reconciliation report. If `written == false`, surface the `reason` to the user and return to Phase 1 for a constrained re-plan.
+
+### Citation format (enforced by Mnemos, rejected at write time)
+
+At least one non-empty citation is required. Accepted formats:
+
+| Format | Example |
+|---|---|
+| `file:line` | `zeus_pipeline.py:73-149` |
+| `https://...` | `https://anthropic.com/engineering/multi-agent-research-system` |
+| `arxiv:YYYY.NNNN` | `arxiv:2603.18897` |
+| `decisions:<id>` | `decisions:d38ab304` |
+| `session:<id>` | `session:zeus_run_20260417` |
+| `mnemos:archival_<id>` | `mnemos:archival_xyz123` |
+
+Vague strings (`"around line 50"`, `"see somewhere"`) are rejected with `CitationError` — the CLI surfaces this as an exit-code-2 failure with `verdict = "MNEMOS_CITATION_REJECTED"` in the JSON.
+
+### Core writes (separate command, optional)
+
+`gate-write` writes only to Recall (searchable narrative, unlimited). If the synthesis contains a distilled pattern worth pinning in Core (context-resident, ~5K budget, auto-injected into future Zeus dispatches), run an additional command AFTER the gate-write succeeds:
+
 ```bash
-python ~/Desktop/T1/Toke/automations/homer/mnemos/mnemos.py write-recall "Zeus run: <topic>" "<full synthesis text>" "<citation1>,<citation2>"
+python $TOKE_ROOT/automations/homer/mnemos/mnemos.py write-core \
+    "<one-line distilled pattern>" "<file:line citation>" HIGH
 ```
 
-Citation is REQUIRED on both writes. `CitationError` fires if citation is invalid or missing. Accepted formats: `file:line`, `https://...`, `arxiv:YYYY.NNNN`, `mnemos:archival_id`, `decisions:id`, `session:id`.
+Core writes don't go through the Oracle gate because Core entries are short-form patterns, not full synthesis outputs. The Oracle gate is designed for the Recall payload.
 
-Every Core write must include a file:line citation. Zero dark edits (Beat SOTA commitment #3).
+### Legacy commands (still work, but don't use them in the happy path)
+
+For debugging or forensic inspection, Oracle and Mnemos can still be called directly:
+
+```bash
+# Score without writing (Oracle only)
+python $TOKE_ROOT/automations/homer/oracle/oracle.py score "<text>"
+
+# Write without scoring (bypasses the gate — use ONLY in recovery scenarios)
+python $TOKE_ROOT/automations/homer/mnemos/mnemos.py write-recall "<topic>" "<content>" "<citations>"
+```
+
+Do NOT use the direct Mnemos write in production Zeus runs — it bypasses the Oracle gate, violating the sacred ordering. It exists solely for compaction recovery and manual backfill.
 
 ## Phase 6: Checkpoint (VAULT)
 
@@ -202,7 +258,7 @@ Max 2 SYBIL escalations per Zeus session (hard cost cap, same as godspeed v4.1).
 ## Stacking (Zeus + existing Toke tools)
 
 - **Zeus + Brain** — always. Brain is Phase 0, non-negotiable.
-- **Zeus + Author** — when any Sworder KB load is needed, Zeus dispatches Clio with Author's chain output as Clio's load order.
+- **Zeus + Clio** — when an existing codebase needs mapping before work begins, Zeus dispatches Clio first so the plan is grounded in actual files rather than guesses.
 - **Zeus + godspeed** — godspeed can invoke Zeus as a tier-2.5 sub-tool when a task escalates past godspeed's default depth. godspeed does NOT become Zeus; Zeus is a capability godspeed can reach for.
 - **Zeus + bionics / devTeam / profTeam** — these remain top-level tools. Zeus can dispatch them as muse executors when a subtask needs their specific capability.
 
@@ -224,12 +280,17 @@ All 13 rules apply. Zeus is an orchestrator — it delegates execution but is ac
 
 Zeus fires the SAME `brain godspeed-tick` counter as godspeed. There is one counter per the user, shared across all orchestrators. Auto-scan at tick 33 / 66 / 99 audits Zeus + godspeed + any future orchestrator in one pass.
 
-## Success Criteria for Zeus P0 (today)
+## Success Criteria (P0 → P2 shipped)
 
-- [x] SKILL.md shipped
+- [x] SKILL.md shipped (P0 2026-04-11)
 - [x] VAULT L0 built and tested (smoke tests green)
 - [x] Homer CLI operational (`homer init` / `status` / `test`)
 - [x] First VAULT checkpoint written
-- [ ] First full Zeus run on a real task — deferred to P1 because MUSES don't exist yet (degraded sequential fallback available but untested)
+- [x] MUSES shipped — Calliope, Clio, Urania at `~/.claude/skills/` (P1 2026-04-16)
+- [x] SYBIL advisor escalation wired via `brain advise` (P1 2026-04-12d)
+- [x] Oracle L7 scoring + theater detection (2026-04-12d)
+- [x] Mnemos citation-enforced writes (P2 2026-04-11, vectors + progressive disclosure 2026-04-17)
+- [x] `zeus_pipeline.gate_and_write()` — Oracle-gated Mnemos in code (G3 2026-04-17)
+- [x] `zeus_cli.py gate-write` — atomic Phases 4+5 command (2026-04-17)
 
-**P0 is scaffolding.** The leading-edge multi-agent behavior lands in P1 when MUSES + SYBIL ship. Today's deliverable is the frame everyone else hangs on: VAULT checkpointing, Zeus skill file, Homer CLI.
+**The pantheon is operational.** Homer 8/8 layers live, 17/17 integration tests green, Mnemos has hybrid semantic+FTS5 search, Zeus Phases 4+5 collapse to one atomic command. Next frontier: drive Recall growth by dispatching Zeus on every S3+ task (godspeed Phase 0.5 wires this).

@@ -24,7 +24,10 @@ from mnemos import (  # noqa: E402
     validate_citation,
     require_citation,
     CitationError,
+    _get_embedder,
 )
+
+EMBEDDER_AVAILABLE = _get_embedder() is not None
 
 PASS = "[PASS]"
 FAIL = "[FAIL]"
@@ -412,6 +415,190 @@ def test_archival_back_pointer_format() -> bool:
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+# ── Vector embeddings (Bet 1) ───────────────────────────────────────────────
+
+def test_recall_write_stores_embedding_when_available() -> bool:
+    if not EMBEDDER_AVAILABLE:
+        return True  # gracefully skip when sentence-transformers not installed
+    store, tmp = _fresh_store()
+    try:
+        rid = store.write_recall(
+            topic="brain routing pipeline",
+            content="the classifier wires into UserPromptSubmit hook",
+            citations=["brain_cli.py:200"],
+        )
+        import sqlite3
+        with sqlite3.connect(store.recall.db_path) as conn:
+            row = conn.execute(
+                "SELECT length(embedding) FROM recall_entries WHERE id = ?", (rid,)
+            ).fetchone()
+            return row is not None and row[0] is not None and row[0] > 0
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_recall_semantic_search_finds_paraphrase() -> bool:
+    """The whole point of vectors — find a paraphrased match FTS5 would miss."""
+    if not EMBEDDER_AVAILABLE:
+        return True
+    store, tmp = _fresh_store()
+    try:
+        store.write_recall(
+            topic="memory architecture",
+            content="the classifier wires into UserPromptSubmit hook",
+            citations=["brain_cli.py:200"],
+        )
+        # Paraphrase — no exact shared content tokens ("classifier", "UserPromptSubmit")
+        results = store.search_recall_semantic(
+            "where the prompt classification attaches to the hook system", limit=3
+        )
+        if not results:
+            return False
+        hit = results[0]
+        return (
+            "classifier" in hit["content"]
+            and "similarity" in hit
+            and hit["similarity"] > 0.30
+        )
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_recall_semantic_search_empty_query() -> bool:
+    store, tmp = _fresh_store()
+    try:
+        store.write_recall(topic="t", content="c", citations=["a:1"])
+        return store.search_recall_semantic("") == []
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_recall_semantic_search_threshold() -> bool:
+    """A sky-high min_similarity must filter out even weak semantic hits."""
+    if not EMBEDDER_AVAILABLE:
+        return True
+    store, tmp = _fresh_store()
+    try:
+        store.write_recall(
+            topic="xyz completely unrelated",
+            content="this talks about quantum mechanics and nothing else",
+            citations=["a:1"],
+        )
+        results = store.search_recall_semantic(
+            "bagel shops in midtown manhattan", limit=5, min_similarity=0.95
+        )
+        return results == []
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_recall_hybrid_search_backward_compat() -> bool:
+    """Existing search() contract must still return results for a keyword hit."""
+    store, tmp = _fresh_store()
+    try:
+        store.write_recall(
+            topic="brain pipeline",
+            content="the classifier wires into UserPromptSubmit hook",
+            citations=["brain_cli.py:200"],
+        )
+        results = store.search_recall("classifier", limit=5)
+        return len(results) >= 1 and "classifier" in results[0]["content"]
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_recall_backfill_embeddings_on_legacy_row() -> bool:
+    """Simulate a row written before vectors existed, then backfill."""
+    if not EMBEDDER_AVAILABLE:
+        return True
+    store, tmp = _fresh_store()
+    try:
+        rid = store.write_recall(
+            topic="legacy row", content="content", citations=["a:1"],
+        )
+        import sqlite3
+        with sqlite3.connect(store.recall.db_path) as conn:
+            conn.execute("UPDATE recall_entries SET embedding = NULL WHERE id = ?", (rid,))
+            conn.commit()
+        report = store.backfill_recall_embeddings()
+        if report.get("backfilled", 0) < 1:
+            return False
+        with sqlite3.connect(store.recall.db_path) as conn:
+            row = conn.execute(
+                "SELECT length(embedding) FROM recall_entries WHERE id = ?", (rid,)
+            ).fetchone()
+            return row is not None and row[0] is not None and row[0] > 0
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ── Progressive disclosure (Bet 2) ──────────────────────────────────────────
+
+def test_recall_search_summary_shape() -> bool:
+    store, tmp = _fresh_store()
+    try:
+        store.write_recall(
+            topic="brain pipeline",
+            content="the classifier wires into UserPromptSubmit hook — a very long content string " * 5,
+            citations=["brain_cli.py:200"],
+        )
+        results = store.search_recall_summary("classifier", limit=3)
+        if not results:
+            return False
+        r = results[0]
+        return (
+            "id" in r
+            and "topic" in r
+            and "snippet" in r
+            and "content" not in r  # Layer 1 must NOT leak full content
+        )
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_recall_search_summary_truncates() -> bool:
+    store, tmp = _fresh_store()
+    try:
+        long_content = "classifier " + "x" * 500
+        store.write_recall(
+            topic="t", content=long_content, citations=["a:1"],
+        )
+        results = store.search_recall_summary("classifier", limit=1, snippet_chars=50)
+        if not results:
+            return False
+        snippet = results[0]["snippet"]
+        return len(snippet) <= 55 and snippet.endswith("...")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_recall_load_full_returns_full_entry() -> bool:
+    store, tmp = _fresh_store()
+    try:
+        rid = store.write_recall(
+            topic="full entry",
+            content="this is the full content",
+            citations=["a:1"],
+        )
+        full = store.load_full(rid)
+        return (
+            full is not None
+            and full["id"] == rid
+            and full["content"] == "this is the full content"
+            and "embedding" not in full  # never leak raw BLOB
+        )
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_recall_load_full_missing_returns_none() -> bool:
+    store, tmp = _fresh_store()
+    try:
+        return store.load_full("recall_nonexistent_0000") is None
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 # ── Facade / health ─────────────────────────────────────────────────────────
 
 def test_mnemos_health_shape() -> bool:
@@ -423,6 +610,8 @@ def test_mnemos_health_shape() -> bool:
             and "recall_count" in h
             and "archival_count" in h
             and "fts_available" in h
+            and "semantic_available" in h
+            and "embed_model" in h
         )
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
@@ -467,6 +656,18 @@ TESTS = [
     # Archival
     ("archival_write_and_read", test_archival_write_and_read),
     ("archival_back_pointer_format", test_archival_back_pointer_format),
+    # Vector embeddings (Bet 1)
+    ("recall_write_stores_embedding_when_available", test_recall_write_stores_embedding_when_available),
+    ("recall_semantic_search_finds_paraphrase", test_recall_semantic_search_finds_paraphrase),
+    ("recall_semantic_search_empty_query", test_recall_semantic_search_empty_query),
+    ("recall_semantic_search_threshold", test_recall_semantic_search_threshold),
+    ("recall_hybrid_search_backward_compat", test_recall_hybrid_search_backward_compat),
+    ("recall_backfill_embeddings_on_legacy_row", test_recall_backfill_embeddings_on_legacy_row),
+    # Progressive disclosure (Bet 2)
+    ("recall_search_summary_shape", test_recall_search_summary_shape),
+    ("recall_search_summary_truncates", test_recall_search_summary_truncates),
+    ("recall_load_full_returns_full_entry", test_recall_load_full_returns_full_entry),
+    ("recall_load_full_missing_returns_none", test_recall_load_full_missing_returns_none),
     # Facade
     ("mnemos_health_shape", test_mnemos_health_shape),
 ]

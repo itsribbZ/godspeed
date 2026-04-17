@@ -74,6 +74,122 @@ CHARS_PER_TOKEN_ESTIMATE = 4
 CORE_TOKEN_BUDGET = 5000
 CORE_COMPACT_TARGET = 4000  # compact to this when over budget
 
+# ── Embedding infrastructure (optional — graceful fallback) ──────────────────
+# Vector embeddings for semantic recall. sentence-transformers + numpy are
+# optional — if missing, Mnemos falls back transparently to FTS5/LIKE. Zero
+# breaking changes when the libs are unavailable.
+
+EMBED_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+EMBED_DIMS = 384  # all-MiniLM-L6-v2 output dimension
+SEMANTIC_MIN_SIMILARITY = 0.30  # cosine floor for a semantic match to count
+
+_embedder = None
+_embedder_unavailable = False
+
+
+def _silence_hf_and_transformers() -> None:
+    """Silence sentence-transformers / HuggingFace Hub / transformers output.
+
+    Without this, every Mnemos load prints:
+      - HF Hub unauthenticated-request warning
+      - tqdm "Loading weights: 100%|██████████|" progress bar
+      - BertModel LOAD REPORT (ANSI-bold) + UNEXPECTED row
+      - Notes block
+    Those ANSI escape sequences leak into terminals that don't render them
+    cleanly and clutter the user's UI. Standard fix: env vars + logger levels.
+    Applied once per process, before the first SentenceTransformer() call.
+    """
+    import os
+    import logging
+    os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+    os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
+    os.environ.setdefault("HF_HUB_VERBOSITY", "error")
+    os.environ.setdefault("TRANSFORMERS_VERBOSITY", "error")
+    os.environ.setdefault("TRANSFORMERS_NO_ADVISORY_WARNINGS", "1")
+    # Tokenizers parallelism warning is loud and useless in this context.
+    os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+    for name in ("sentence_transformers", "transformers", "huggingface_hub",
+                 "urllib3", "filelock"):
+        logging.getLogger(name).setLevel(logging.ERROR)
+
+
+def _get_embedder():
+    """Lazy-load the sentence-transformer model. Returns None if unavailable.
+
+    sentence-transformers prints BertModel LOAD REPORT via direct print() calls
+    (not a logger) that include ANSI escape codes. The logger silencing in
+    _silence_hf_and_transformers handles loggers; we also redirect stdout/stderr
+    during the actual load() call to swallow the direct prints.
+    """
+    global _embedder, _embedder_unavailable
+    if _embedder_unavailable:
+        return None
+    if _embedder is not None:
+        return _embedder
+    _silence_hf_and_transformers()
+    import contextlib
+    import io
+    import os
+    try:
+        from sentence_transformers import SentenceTransformer  # type: ignore
+        with open(os.devnull, "w", encoding="utf-8") as devnull:
+            with contextlib.redirect_stdout(devnull), contextlib.redirect_stderr(devnull):
+                _embedder = SentenceTransformer(EMBED_MODEL_NAME)
+        return _embedder
+    except Exception:
+        _embedder_unavailable = True
+        return None
+
+
+def _encode_text(text: str):
+    """Encode text to a float32 numpy vector. Returns None if unavailable."""
+    embedder = _get_embedder()
+    if embedder is None:
+        return None
+    try:
+        import numpy as np  # type: ignore
+        vec = embedder.encode(text, convert_to_numpy=True, show_progress_bar=False)
+        return vec.astype(np.float32)
+    except Exception:
+        return None
+
+
+def _serialize_vec(vec) -> bytes:
+    """Serialize a numpy float32 array to bytes for SQLite BLOB storage."""
+    if vec is None:
+        return b""
+    return vec.tobytes()
+
+
+def _deserialize_vec(blob):
+    """Deserialize a BLOB back to a numpy float32 array. Returns None if empty."""
+    if not blob:
+        return None
+    try:
+        import numpy as np  # type: ignore
+        return np.frombuffer(blob, dtype=np.float32)
+    except Exception:
+        return None
+
+
+def _cosine_similarity(a, b) -> float:
+    """Cosine similarity between two numpy vectors. Returns 0.0 on degenerate input."""
+    try:
+        import numpy as np  # type: ignore
+        na = float(np.linalg.norm(a))
+        nb = float(np.linalg.norm(b))
+        if na == 0.0 or nb == 0.0:
+            return 0.0
+        return float(np.dot(a, b) / (na * nb))
+    except Exception:
+        return 0.0
+
+
+def _row_to_public_dict(row) -> dict:
+    """Convert a sqlite3.Row to a dict, stripping the embedding BLOB so callers don't see raw bytes."""
+    d = {k: row[k] for k in row.keys() if k != "embedding"}
+    return d
+
 
 class CitationError(ValueError):
     """Raised when a citation doesn't match any valid format."""
@@ -305,6 +421,9 @@ class RecallMemory:
                     accessed_count INTEGER DEFAULT 0
                 )
             """)
+            existing_cols = {row[1] for row in conn.execute("PRAGMA table_info(recall_entries)").fetchall()}
+            if "embedding" not in existing_cols:
+                conn.execute("ALTER TABLE recall_entries ADD COLUMN embedding BLOB")
             try:
                 conn.execute("""
                     CREATE VIRTUAL TABLE IF NOT EXISTS recall_fts USING fts5(
@@ -333,19 +452,31 @@ class RecallMemory:
             require_citation(c, "citations[]")
 
         entry_id = f"recall_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(2)}"
+        # Compute embedding over topic+content concatenation (richer than content alone).
+        # Returns None if embedder unavailable — row is still written, just without semantic search.
+        vec = _encode_text(f"{topic}\n\n{content}")
+        embedding_blob = _serialize_vec(vec)
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
-                "INSERT INTO recall_entries (id, topic, content, citations_json, created_at) "
-                "VALUES (?, ?, ?, ?, ?)",
-                (entry_id, topic, content, json.dumps(citations), datetime.datetime.now().isoformat()),
+                "INSERT INTO recall_entries (id, topic, content, citations_json, created_at, embedding) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (entry_id, topic, content, json.dumps(citations), datetime.datetime.now().isoformat(), embedding_blob),
             )
             conn.commit()
         return entry_id
 
     def search(self, query: str, limit: int = 5) -> list[dict]:
-        """Full-text search. Returns list of entry dicts (newest / best-rank first)."""
+        """Hybrid search: semantic (if embedder available) first, fall back to FTS5/LIKE.
+
+        Preserves the original list[dict] contract — callers that depended on
+        search() before embeddings shipped keep working. Semantic hits add a
+        `similarity` float field; keyword hits do not.
+        """
         if not query or not query.strip():
             return []
+        semantic = self.search_semantic(query, limit=limit)
+        if semantic:
+            return semantic
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             if self.fts_available:
@@ -358,10 +489,10 @@ class RecallMemory:
                     """, (query, limit))
                     rows = cursor.fetchall()
                     if rows:
-                        return [dict(r) for r in rows]
+                        return [_row_to_public_dict(r) for r in rows]
                 except sqlite3.OperationalError:
                     pass
-            return [dict(r) for r in self._like_search(conn, query, limit)]
+            return [_row_to_public_dict(r) for r in self._like_search(conn, query, limit)]
 
     def _like_search(self, conn, query: str, limit: int):
         like = f"%{query}%"
@@ -371,11 +502,98 @@ class RecallMemory:
             ORDER BY created_at DESC LIMIT ?
         """, (like, like, limit)).fetchall()
 
+    def search_semantic(self, query: str, limit: int = 5,
+                        min_similarity: float = SEMANTIC_MIN_SIMILARITY) -> list[dict]:
+        """Pure semantic search via sentence-transformer embeddings.
+
+        Returns entries with cosine similarity >= min_similarity, ranked desc.
+        Returns [] if embedder unavailable or no rows have embeddings — callers
+        combine with keyword search themselves, or use `search()` for the hybrid.
+        """
+        if not query or not query.strip():
+            return []
+        q_vec = _encode_text(query)
+        if q_vec is None:
+            return []
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                "SELECT id, topic, content, citations_json, created_at, accessed_count, embedding "
+                "FROM recall_entries WHERE embedding IS NOT NULL AND length(embedding) > 0"
+            ).fetchall()
+
+        scored = []
+        for r in rows:
+            vec = _deserialize_vec(r["embedding"])
+            if vec is None:
+                continue
+            sim = _cosine_similarity(q_vec, vec)
+            if sim >= min_similarity:
+                d = _row_to_public_dict(r)
+                d["similarity"] = round(sim, 4)
+                scored.append(d)
+        scored.sort(key=lambda d: d["similarity"], reverse=True)
+        return scored[:limit]
+
+    def search_summary(self, query: str, limit: int = 5, snippet_chars: int = 80) -> list[dict]:
+        """Progressive-disclosure layer 1: return only {id, topic, snippet, citations, ...}.
+
+        Caller inspects summaries, then calls `read_by_id()` / `load_full()` on
+        the handful worth expanding. Matches the claude-mem Progressive
+        Disclosure workflow — the goal is ~10x token reduction vs pulling full
+        content every time.
+        """
+        full = self.search(query, limit=limit)
+        out = []
+        for r in full:
+            content = r.get("content", "") or ""
+            snippet = content[:snippet_chars].rstrip()
+            if len(content) > snippet_chars:
+                snippet = snippet + "..."
+            item = {
+                "id": r["id"],
+                "topic": r["topic"],
+                "snippet": snippet,
+                "citations_json": r.get("citations_json", "[]"),
+                "created_at": r.get("created_at", ""),
+            }
+            if "similarity" in r:
+                item["similarity"] = r["similarity"]
+            out.append(item)
+        return out
+
+    def backfill_embeddings(self) -> dict:
+        """Compute embeddings for any rows that don't have one. Idempotent.
+
+        Useful after installing sentence-transformers on an existing recall.db,
+        or after upgrading from a Mnemos version without vector support.
+        """
+        if _get_embedder() is None:
+            return {"backfilled": 0, "skipped": 0, "total": 0, "reason": "embedder_unavailable"}
+        with sqlite3.connect(self.db_path) as conn:
+            rows = conn.execute(
+                "SELECT id, topic, content FROM recall_entries "
+                "WHERE embedding IS NULL OR length(embedding) = 0"
+            ).fetchall()
+            total = len(rows)
+            backfilled = 0
+            for (row_id, topic, content) in rows:
+                vec = _encode_text(f"{topic}\n\n{content}")
+                if vec is None:
+                    continue
+                conn.execute(
+                    "UPDATE recall_entries SET embedding = ? WHERE id = ?",
+                    (_serialize_vec(vec), row_id),
+                )
+                backfilled += 1
+            conn.commit()
+        return {"backfilled": backfilled, "skipped": total - backfilled, "total": total}
+
     def read_by_id(self, entry_id: str) -> dict | None:
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             row = conn.execute("SELECT * FROM recall_entries WHERE id = ?", (entry_id,)).fetchone()
-            return dict(row) if row else None
+            return _row_to_public_dict(row) if row else None
 
     def count(self) -> int:
         with sqlite3.connect(self.db_path) as conn:
@@ -458,6 +676,22 @@ class MnemosStore:
     def search_recall(self, query: str, limit: int = 5) -> list[dict]:
         return self.recall.search(query, limit)
 
+    def search_recall_semantic(self, query: str, limit: int = 5,
+                               min_similarity: float = SEMANTIC_MIN_SIMILARITY) -> list[dict]:
+        return self.recall.search_semantic(query, limit, min_similarity)
+
+    def search_recall_summary(self, query: str, limit: int = 5, snippet_chars: int = 80) -> list[dict]:
+        """Progressive-disclosure layer 1 on Recall. Pair with `load_full(id)`."""
+        return self.recall.search_summary(query, limit, snippet_chars)
+
+    def load_full(self, entry_id: str) -> dict | None:
+        """Progressive-disclosure layer 2 — fetch full Recall entry by id."""
+        return self.recall.read_by_id(entry_id)
+
+    def backfill_recall_embeddings(self) -> dict:
+        """Backfill vector embeddings for Recall rows missing them. Idempotent."""
+        return self.recall.backfill_embeddings()
+
     def read_core(self) -> list[dict]:
         return [e.to_dict() for e in self.core.read_all()]
 
@@ -476,11 +710,15 @@ class MnemosStore:
         return {"compacted": True, "result": result, "new_status": self.core.budget_status()}
 
     def health(self) -> dict:
+        # Probe embedder WITHOUT forcing a model load — just check the flag state.
+        semantic_available = _get_embedder() is not None
         return {
             "core": self.core.budget_status(),
             "recall_count": self.recall.count(),
             "archival_count": self.archival.count(),
             "fts_available": self.recall.fts_available,
+            "semantic_available": semantic_available,
+            "embed_model": EMBED_MODEL_NAME if semantic_available else None,
         }
 
 
@@ -523,6 +761,40 @@ def _main(argv: list[str]) -> int:
         limit = int(argv[3]) if len(argv) > 3 else 5
         for r in store.search_recall(argv[2], limit=limit):
             print(json.dumps(r, indent=2, ensure_ascii=False))
+        return 0
+
+    if cmd == "search-recall-semantic":
+        if len(argv) < 3:
+            print("usage: mnemos.py search-recall-semantic QUERY [LIMIT]", file=sys.stderr)
+            return 1
+        limit = int(argv[3]) if len(argv) > 3 else 5
+        for r in store.search_recall_semantic(argv[2], limit=limit):
+            print(json.dumps(r, indent=2, ensure_ascii=False))
+        return 0
+
+    if cmd == "search-recall-summary":
+        if len(argv) < 3:
+            print("usage: mnemos.py search-recall-summary QUERY [LIMIT]", file=sys.stderr)
+            return 1
+        limit = int(argv[3]) if len(argv) > 3 else 5
+        for r in store.search_recall_summary(argv[2], limit=limit):
+            print(json.dumps(r, indent=2, ensure_ascii=False))
+        return 0
+
+    if cmd == "load-full":
+        if len(argv) < 3:
+            print("usage: mnemos.py load-full ENTRY_ID", file=sys.stderr)
+            return 1
+        result = store.load_full(argv[2])
+        if result is None:
+            print(f"not found: {argv[2]}", file=sys.stderr)
+            return 1
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0
+
+    if cmd == "backfill-embeddings":
+        result = store.backfill_recall_embeddings()
+        print(json.dumps(result, indent=2))
         return 0
 
     print(f"unknown command: {cmd}", file=sys.stderr)

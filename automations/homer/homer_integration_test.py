@@ -323,6 +323,97 @@ def integration_zeus_oracle_gate_passes_clean() -> bool:
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def integration_zeus_cli_status_returns_json() -> bool:
+    """Zeus CLI status subcommand emits valid JSON with expected keys."""
+    import subprocess
+    tmp = Path(tempfile.mkdtemp(prefix="zeus_cli_status_"))
+    try:
+        cli = HOMER_ROOT / "zeus" / "zeus_cli.py"
+        proc = subprocess.run(
+            [sys.executable, str(cli), "status",
+             "--core-file", str(tmp / "core.md"),
+             "--recall-db", str(tmp / "recall.db"),
+             "--archival-dir", str(tmp / "archival")],
+            capture_output=True, text=True, encoding="utf-8", timeout=60,
+        )
+        if proc.returncode != 0:
+            return False
+        payload = json.loads(proc.stdout)
+        return (
+            "oracle_loaded" in payload
+            and "mnemos" in payload
+            and "brain_cli_present" in payload
+            and "zeus_pipeline_loaded" in payload
+        )
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def integration_zeus_cli_gate_write_pass_writes_entry() -> bool:
+    """Zeus CLI gate-write end-to-end: clean synthesis writes an isolated Mnemos row and returns exit 0."""
+    import subprocess
+    tmp = Path(tempfile.mkdtemp(prefix="zeus_cli_pass_"))
+    try:
+        synthesis = tmp / "synth.md"
+        synthesis.write_text(
+            "## Zeus Synthesis\n\nBrain classifier routes prompts to S0-S5 tiers per "
+            "decisions.jsonl:100. Receipts verified. ",
+            encoding="utf-8",
+        )
+        cli = HOMER_ROOT / "zeus" / "zeus_cli.py"
+        proc = subprocess.run(
+            [sys.executable, str(cli), "gate-write",
+             "--topic", "Zeus CLI integration test",
+             "--synthesis-file", str(synthesis),
+             "--citations", "decisions.jsonl:100,session:zeus_cli_it_20260417",
+             "--core-file", str(tmp / "core.md"),
+             "--recall-db", str(tmp / "recall.db"),
+             "--archival-dir", str(tmp / "archival")],
+            capture_output=True, text=True, encoding="utf-8", timeout=120,
+        )
+        if proc.returncode != 0:
+            print(f"    DEBUG stdout: {proc.stdout[:200]}", file=sys.stderr)
+            print(f"    DEBUG stderr: {proc.stderr[:200]}", file=sys.stderr)
+            return False
+        payload = json.loads(proc.stdout)
+        return (
+            payload.get("written") is True
+            and payload.get("verdict") == "PASS"
+            and payload.get("entry_id", "").startswith("recall_")
+        )
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def integration_zeus_cli_gate_write_citation_rejected() -> bool:
+    """Zeus CLI rejects a vague citation with exit code 2 and structured error."""
+    import subprocess
+    tmp = Path(tempfile.mkdtemp(prefix="zeus_cli_citerr_"))
+    try:
+        synthesis = tmp / "synth.md"
+        synthesis.write_text("Clean synthesis with proper receipts. " * 5, encoding="utf-8")
+        cli = HOMER_ROOT / "zeus" / "zeus_cli.py"
+        proc = subprocess.run(
+            [sys.executable, str(cli), "gate-write",
+             "--topic", "Zeus CLI citation test",
+             "--synthesis-file", str(synthesis),
+             "--citations", "around line 50",  # vague — must be rejected
+             "--core-file", str(tmp / "core.md"),
+             "--recall-db", str(tmp / "recall.db"),
+             "--archival-dir", str(tmp / "archival")],
+            capture_output=True, text=True, encoding="utf-8", timeout=60,
+        )
+        if proc.returncode != 2:
+            return False
+        payload = json.loads(proc.stdout)
+        return (
+            payload.get("written") is False
+            and payload.get("verdict") == "MNEMOS_CITATION_REJECTED"
+        )
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 TESTS = [
     ("vault_checkpoint_lifecycle", integration_vault_checkpoint_lifecycle),
     ("sybil_preconditions", integration_sybil_preconditions),
@@ -341,6 +432,9 @@ TESTS = [
     ("muses_python_contract", integration_muses_python_contract),
     ("zeus_oracle_gate_blocks_hard_fail", integration_zeus_oracle_gate_blocks_hard_fail),
     ("zeus_oracle_gate_passes_clean", integration_zeus_oracle_gate_passes_clean),
+    ("zeus_cli_status_returns_json", integration_zeus_cli_status_returns_json),
+    ("zeus_cli_gate_write_pass_writes_entry", integration_zeus_cli_gate_write_pass_writes_entry),
+    ("zeus_cli_gate_write_citation_rejected", integration_zeus_cli_gate_write_citation_rejected),
 ]
 
 
