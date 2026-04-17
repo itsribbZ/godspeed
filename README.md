@@ -80,32 +80,56 @@ Brain beats the best naive baseline by **31.5 pp exact match**. One wrong classi
 ## Install
 
 ### Requirements
-- Python 3.10+ (stdlib only for Brain)
+- Python 3.10+ (stdlib only for Brain; `sentence-transformers` optional for Mnemos vector search)
 - Node.js 18+ (for the fast-path hook)
 - Claude Code CLI (the hooks wire into it)
 
-### Clone + configure
+### One-command install (recommended)
+
+Clone the repo, then run the installer for your platform. It copies all 16 skills + 2 slash commands into `~/.claude/`, syncs the Brain manifest, and runs the 65-test verification.
 
 ```bash
-git clone <your-fork-url> toke
+git clone https://github.com/<your-username>/toke
 cd toke
 
-# Set TOKE_ROOT env var so hooks can find the install location
-export TOKE_ROOT="$(pwd)"
-# Or on Windows cmd.exe:
-#   set TOKE_ROOT=C:\path\to\toke
+# macOS / Linux / Git Bash on Windows
+bash install.sh
 
-# Sync manifest formats
-python automations/brain/manifest_to_json.py
+# Windows PowerShell
+.\install.ps1
+```
 
-# Verify: all tests should pass
-python automations/brain/brain_tests.py
-python automations/homer/homer_integration_test.py
+The installer will NOT overwrite existing skills by default. Pass `--force` (bash) or `-Force` (PowerShell) to replace them (old versions are backed up to `.bak.<timestamp>` directories).
+
+### What gets installed
+
+```
+~/.claude/skills/
+├── godspeed/      ← max-execution mode (activates on "godspeed")
+├── brain/         ← S0-S5 classifier workbench
+├── zeus/          ← orchestrator (auto-dispatched on S3+ via godspeed Phase 0.5)
+├── calliope/      ← research muse
+├── clio/          ← code-archaeology muse
+├── urania/        ← measurement muse
+├── sybil/         ← advisor escalation (advisor_20260301)
+├── mnemos/        ← 3-tier memory with hybrid semantic+FTS5 search
+├── oracle/        ← synthesis critic (Sacred Rules + theater detection)
+├── aurora/        ← nightly routing-weight tuner
+├── hesper/        ← nightly learning distiller
+├── nyx/           ← nightly theater auditor
+├── toke-init/     ← session pre-flight
+├── close-session/ ← session closure + memory persistence
+├── verify/        ← build/test health check (auto-detects project type)
+└── sitrep/        ← cross-project status aggregator
+
+~/.claude/commands/
+├── toke.md        ← /toke — one-screen workbench
+└── brain-score.md ← /brain-score — classify any prompt
 ```
 
 ### Wire hooks into Claude Code
 
-Add to `~/.claude/settings.json`:
+After the install script finishes, add this block to `~/.claude/settings.json` (the installer prints it at the end of its run):
 
 ```json
 {
@@ -117,14 +141,32 @@ Add to `~/.claude/settings.json`:
       { "command": "$TOKE_ROOT/hooks/brain_tools_hook.sh" }
     ],
     "SessionEnd": [
-      { "command": "$TOKE_ROOT/hooks/session_cost_report.sh" },
-      { "command": "$TOKE_ROOT/hooks/toke_session_learn.sh" }
+      { "command": "$TOKE_ROOT/hooks/session_cost_report.sh" }
     ]
   }
 }
 ```
 
-Next session, Claude Code fires these automatically. Brain logs every decision to `~/.claude/telemetry/brain/decisions.jsonl`.
+Also persist `TOKE_ROOT` in your shell profile so the hooks can find the install location:
+
+```bash
+# bash / zsh
+export TOKE_ROOT="$(pwd)"
+# PowerShell (run once)
+[Environment]::SetEnvironmentVariable('TOKE_ROOT', (Get-Location).Path, 'User')
+```
+
+### First test (prove it works)
+
+Start a new Claude Code session and try:
+
+```
+/brain-score refactor my distributed cache across 4 files
+```
+
+Expected output: `Tier: S4 | Model: opus | Effort: high`.
+
+Then type `godspeed` and ask for any multi-step task. Phase -1 tick will fire, Phase 0.5 will classify the prompt, and if the task scores S3+ Zeus will auto-dispatch with parallel MUSES + Oracle-gated Mnemos write.
 
 ### Optional: nightly sleep agents
 
@@ -147,16 +189,20 @@ Or on macOS/Linux, add a cron entry:
 ```
 toke/
 ├── README.md                  # this file
+├── install.sh                 # bash installer (macOS / Linux / Git Bash)
+├── install.ps1                # PowerShell installer (Windows)
 ├── .env.example               # env var template
 ├── CLAUDE.md                  # project context for AI collaborators
 ├── PROJECT_BRIEF.md           # 8-stage pipeline analysis
+├── skills/                    # 16 Claude Code skills (installer copies to ~/.claude/skills/)
+├── commands/                  # 2 slash commands (installer copies to ~/.claude/commands/)
 ├── pipeline/                  # measured Claude Code internals (stages 0-7)
 ├── tokens/                    # 12 measurement tools + reports
 ├── research/                  # Brain / routing literature review
 ├── automations/
 │   ├── brain/                 # S0-S5 classifier (manifest-driven)
 │   ├── gepa/                  # evolutionary weight tuner
-│   ├── homer/                 # multi-agent pantheon (zeus, muses, oracle, mnemos, vault, sleep)
+│   ├── homer/                 # multi-agent pantheon (zeus + zeus_cli, muses, oracle, mnemos, vault, sleep)
 │   ├── local/                 # Qwen 2.5 14B via Ollama fallback
 │   ├── governance/            # audit_protocol.py + threat model
 │   └── portability/           # migration guide
