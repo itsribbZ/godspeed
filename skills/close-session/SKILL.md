@@ -5,12 +5,27 @@ description: >
   and context for next session. v2.0: structured learning format, cross-skill auto-promotion,
   checkpoint verification, ecosystem health snapshot. Companion to init — init loads, close-session saves.
 model: sonnet
-effort: medium
 ---
 
 # Close Session v2.0
 
 Init loads context. Close-session saves it. Together: lossless session loop.
+
+> **Context-discipline (v2.2 — 2026-04-17):** Close-session writes summaries from what's already in the conversation. It does NOT re-load source material. Without this discipline, long sessions push main-session context past 200K and force the `[1m]` model variant, which requires `/extra-usage` billing. The rules below keep close-session inside the standard 200K window.
+
+## Context-Discipline Rules (v2.2)
+
+1. **Phase 1 session audit** — scan the scrollback you already have. Don't re-Read any file already touched this session — use what's in context.
+2. **Phase 4 memory updates** — Edit files in-place with targeted file:line anchors. Do NOT Read a file end-to-end just to understand where to append — use Grep to find the insertion point, then Edit.
+3. **Phase 4c skill `_learnings.md` checks** — always grep-first, never bulk-read:
+   ```bash
+   grep -c "^###" ~/.claude/skills/<skill>/_learnings.md   # entry count
+   tail -40 ~/.claude/skills/<skill>/_learnings.md        # recent entries only
+   ```
+   Only Read the full file if a regression is suspected.
+4. **Bible sync** — if a project's bible is >10K tokens, Edit it with targeted file:line anchors. Don't Read the whole file to understand context.
+
+Bottom line: **close-session writes summaries, it does NOT re-load session source material.** Everything needed is already in the conversation context.
 
 ## Trigger
 
