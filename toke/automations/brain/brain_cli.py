@@ -1210,7 +1210,7 @@ def cmd_advisor_status(args: list[str]) -> int:
 
 
 _VERSION_CHECK_REPO = "itsribbZ/godspeed"
-_VERSION_CHECK_URL = f"https://raw.githubusercontent.com/{_VERSION_CHECK_REPO}/main/plugins/godspeed/.claude-plugin/plugin.json"
+_VERSION_CHECK_URL = f"https://raw.githubusercontent.com/{_VERSION_CHECK_REPO}/master/plugins/godspeed/.claude-plugin/plugin.json"
 _VERSION_CHECK_CACHE_SECONDS = 86400  # 24 hours
 
 
