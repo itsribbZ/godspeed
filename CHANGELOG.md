@@ -2,6 +2,10 @@
 
 All notable changes to godspeed are tracked here. Versioning follows [SemVer](https://semver.org/).
 
+## [2.3.10] - 2026-04-25
+### Fixed
+- RELEASE.md scrub regex: removed `your-trading-project` and `your-3d-project` (false-positive scrub targets — these are the substitution OUTPUT for `Quantified` / `Forge3D`, not the leak). Restored the original-name patterns (`Quantified` / `Forge3D`) instead, so the scrub catches re-introductions of the real names. Comment expanded to make the placeholder rule clearer for future maintainers.
+
 ## [2.3.9] - 2026-04-25
 ### Fixed
 - Restored RELEASE.md scrub regex literals after a deep history-rewrite pass cosmetically degraded them. The scrub now correctly looks for `Jacob Ribbe` and `Jacob wants` as scrub targets (not as the alias `Ribbz`, which would false-positive on every legitimate author credit).
@@ -101,6 +105,7 @@ All notable changes to godspeed are tracked here. Versioning follows [SemVer](ht
 ## [1.0.0] - Initial release
 - godspeed as Claude Code plugin
 
+[2.3.10]: https://github.com/itsribbZ/godspeed/releases/tag/v2.3.10
 [2.3.9]: https://github.com/itsribbZ/godspeed/releases/tag/v2.3.9
 [2.3.8]: https://github.com/itsribbZ/godspeed/releases/tag/v2.3.8
 [2.3.7]: https://github.com/itsribbZ/godspeed/releases/tag/v2.3.7

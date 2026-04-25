@@ -34,9 +34,11 @@ python -c "import json; print('hooks:', len(json.load(open('plugins/godspeed/hoo
 
 # Verify zero personal leaks AND zero private-project-name leaks (should return nothing).
 # NOTE: "your-X" / "Your-X" patterns are intentional public-safe placeholders for
-# private project names (e.g. "Your-Automation-Skill" stands in for the real product).
-# Do NOT add those to this regex — they are the scrub itself, not the leak.
-grep -rn "jbro1\|jribbe04\|Jacob Ribbe\|Jacob wants\|\bJacob\b\|Desktop/T1\|bionics\|Bionics\|sworder\|Sworder\|quantified\|your-trading-project\|forge3d\|your-3d-project\|forge3D\|enigma-init\|enigma_vault\|buddy-init\|ribbz-init\|career-ops\|career_ops\|AnimBPDoctor\|SemperFidelis\|syncscout\|Kashi\|atelier\|Sentinel" plugins/ toke/ README.md install.sh install.ps1 LICENSE 2>/dev/null | grep -v __pycache__
+# private project names. They appear in _shared_learnings.md as the SUBSTITUTION
+# OUTPUT for real names (e.g. "Quantified" → "your-trading-project", "Forge3D" →
+# "your-3d-project", "Bionics" → "Your-Automation-Skill"). Do NOT add any "your-*" /
+# "Your-*" pattern to this regex — those are the scrub itself, not the leak.
+grep -rn "jbro1\|jribbe04\|Jacob Ribbe\|Jacob wants\|\bJacob\b\|Desktop/T1\|bionics\|Bionics\|sworder\|Sworder\|quantified\|Quantified\|forge3d\|Forge3D\|forge3D\|enigma-init\|enigma_vault\|buddy-init\|ribbz-init\|career-ops\|career_ops\|AnimBPDoctor\|SemperFidelis\|syncscout\|Kashi\|atelier\|Sentinel" plugins/ toke/ README.md install.sh install.ps1 LICENSE 2>/dev/null | grep -v __pycache__
 
 # Verify git state is clean
 git status --short
