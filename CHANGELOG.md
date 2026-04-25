@@ -2,6 +2,13 @@
 
 All notable changes to godspeed are tracked here. Versioning follows [SemVer](https://semver.org/).
 
+## [2.3.9] - 2026-04-25
+### Fixed
+- Restored RELEASE.md scrub regex literals after a deep history-rewrite pass cosmetically degraded them. The scrub now correctly looks for `Jacob Ribbe` and `Jacob wants` as scrub targets (not as the alias `Ribbz`, which would false-positive on every legitimate author credit).
+
+### Notes
+- This release is the first after a `git filter-repo` history rewrite that scrubbed the maintainer's personal email, name, and Windows paths from all commit blobs and commit messages across the entire history. Anyone with a prior clone needs `git fetch --all && git reset --hard origin/master` (or fresh clone) to sync.
+
 ## [2.3.8] - 2026-04-25
 ### Changed
 - All narrative references to the maintainer's first name in tracked files (90 occurrences across 31 files — comments, docstrings, README narrative, SKILL.md descriptions, test descriptions) replaced with neutral `the user` / `the user's`. Methodology and behavior unchanged; persona neutralized for public package. Author identity remains as the `Ribbz` alias in `plugin.json`, `marketplace.json`, `LICENSE`, and recent commit history.
@@ -94,6 +101,7 @@ All notable changes to godspeed are tracked here. Versioning follows [SemVer](ht
 ## [1.0.0] - Initial release
 - godspeed as Claude Code plugin
 
+[2.3.9]: https://github.com/itsribbZ/godspeed/releases/tag/v2.3.9
 [2.3.8]: https://github.com/itsribbZ/godspeed/releases/tag/v2.3.8
 [2.3.7]: https://github.com/itsribbZ/godspeed/releases/tag/v2.3.7
 [2.3.6]: https://github.com/itsribbZ/godspeed/releases/tag/v2.3.6
