@@ -2,6 +2,19 @@
 
 All notable changes to godspeed are tracked here. Versioning follows [SemVer](https://semver.org/).
 
+## [2.4.1] - 2026-05-06
+### Fixed
+- `plugins/godspeed/automations/homer/homer_integration_test.py` removed from the plugin install path. The test imports `nyx`, which only ships in the Option B (`install.sh`) tree under `toke/automations/homer/sleep/nyx/` — the plugin tree intentionally does not ship the sleep engines (per the v2.3.6 install-path curation rule). Shipping this test in the plugin tree caused `ModuleNotFoundError: No module named 'nyx'` if a user ever tried to run it from a plugin install. The test still ships in the Option B tree where its dependencies actually exist.
+
+### Added
+- README "What you get" table — three new rows backed by reproducible commands rather than projections:
+  - **Latency** — replaced the stale ~90ms / ~160ms numbers (those were from the pre-`brain_hook_fast.js` bash-subprocess stack) with measured **3–4 ms** cold, median of 5 runs on Windows 11 / Node 22 / v2.4.0. Reproduction command included.
+  - **Tests** — **25/25 pass** on the v2.4.0 Homer infrastructure: `test_cost_guard.py` 3/3 + `test_token_accountant.py` 22/22. Reproduction command included.
+  - **Footprint** — 1.6 MB plugin install / 2.7 MB install.sh path, 18 vs 16 skills, ~13K LOC Python under `automations/`. Verifiable with `du -sh` + `find -name SKILL.md`.
+
+### Notes
+- All "What you get" rows now point at a command the user can run on their own machine to verify the claim. No projection-as-benchmark, no unreproducible internal numbers.
+
 ## [2.4.0] - 2026-05-05
 ### Added
 - **Cost Guard (`automations/homer/cost_guard.py`)** — per-tier USD budget table (S0 $0.005 → S5 $5.000), 1.5× soft-cap with mid-flight `BUDGET_EXCEEDED` verdict, post-flight `cost_efficiency.jsonl` receipts. Every live subagent dispatch carries a tier-stamped budget contract; agent aborts gracefully on breach with partial work preserved. CLI: `cost_guard.py budgets | rollup | recent`.
