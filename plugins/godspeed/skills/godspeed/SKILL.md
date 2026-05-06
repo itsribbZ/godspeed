@@ -264,6 +264,40 @@ For non-Zeus runs: if something durable was learned (a reusable pattern, a new f
 
 ---
 
+## Cost Guard (v2.4.0 — budget enforcement + post-flight receipts)
+
+> **Free by default.** Godspeed never auto-fires Anthropic API calls. The cost-guarded `agent_runner` defaults to `--mode dry-run` (zero API). The only paid paths are explicit user commands: `agent_runner.py invoke <name> --mode live` (requires `ANTHROPIC_API_KEY`) and `brain advise "prompt"` (advisor escalation, requires `ANTHROPIC_API_KEY`). The 5 lifecycle hooks use only the local-only `brain_hook_fast.js` classifier — no API calls. If you never opt in, the plugin runs at $0 against your Anthropic key.
+
+Every subagent dispatch carries a tier-stamped USD ceiling. `agent_runner.invoke()` enforces it mid-flight (when run in `--mode live`); `cost_guard.py` writes a one-line receipt per fire to `~/.claude/telemetry/brain/cost_efficiency.jsonl`.
+
+**Tier → budget ceiling** (per `automations/homer/cost_guard.py`):
+
+| Tier | Budget (USD) | Soft-cap (1.5×) |
+|------|:-:|:-:|
+| S0 | $0.005 | $0.0075 |
+| S1 | $0.020 | $0.030 |
+| S2 | $0.100 | $0.150 |
+| S3 | $0.500 | $0.750 |
+| S4 | $2.000 | $3.000 |
+| S5 | $5.000 | $7.500 |
+
+**Three guarantees:**
+1. **Pre-flight stamp** — `agent_runner.invoke()` stamps `tier` + `budget_usd` on the dispatch envelope. The deployment plan should surface them so the user sees the cost contract upfront.
+2. **Mid-flight cap** — running cost is recomputed after each tool-use iteration. Breach at `actual ≥ budget × 1.5` aborts gracefully with `verdict=BUDGET_EXCEEDED`; partial work and last response_text are preserved.
+3. **Post-flight receipt** — every `invoke()` writes `{ts, agent, tier, budget_usd, actual_cost_usd, iterations, cache_hit_rate, verdict, breach, efficiency_ratio}` to the receipts log. Aurora mines it for ROI tuning.
+
+**When `BUDGET_EXCEEDED` returns:** never silently retry on a higher budget. Surface to the user and let them choose: (a) escalate tier, (b) accept partial work, (c) reject and redesign the prompt.
+
+**CLI inspection:**
+
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/automations/homer/cost_guard.py budgets   # tier table
+python ${CLAUDE_PLUGIN_ROOT}/automations/homer/cost_guard.py rollup    # aggregate receipts
+python ${CLAUDE_PLUGIN_ROOT}/automations/homer/cost_guard.py recent --n 10
+```
+
+---
+
 ## Homer Pantheon (who does what)
 
 | Layer | Skill | Role |

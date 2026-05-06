@@ -9,6 +9,8 @@ Type `godspeed` in a Claude Code session, the Toke engine activates for the rest
 
 Zero fork of Claude Code. Everything wires in through the hook API.
 
+> **Free by default — no API key required.** Godspeed never auto-fires Anthropic API calls. The 5 lifecycle hooks use only the local-only `brain_hook_fast.js` classifier (a regex/keyword scorer running in your shell, not a network call). The Homer pantheon dispatches subagents through Claude Code's in-session `Agent` tool, which is part of your existing Claude Code session — no separate billing channel against your Anthropic key. Two paths can opt into direct API calls, both gated behind explicit user commands and an `ANTHROPIC_API_KEY` env var: `brain advise "<prompt>"` (advisor escalation) and `agent_runner.py invoke <name> --mode live` (live subagent dispatch). Unset the key, never type those commands, and the plugin runs at $0 against your Anthropic API account. The included `cost_guard.py` enforces per-tier USD ceilings on the live path so even when you opt in, you can't accidentally burn your credit balance.
+
 ---
 
 ## What you get

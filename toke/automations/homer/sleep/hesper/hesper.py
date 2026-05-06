@@ -22,6 +22,7 @@ Output:
 
 from __future__ import annotations
 
+import argparse
 import datetime
 import re
 import sys
@@ -36,6 +37,16 @@ except (AttributeError, OSError):
 
 HESPER_ROOT = Path(__file__).parent
 REPORTS_DIR = HESPER_ROOT / "best_practices"
+
+sys.path.insert(0, str(HESPER_ROOT.parent))
+try:
+    from _division import (  # type: ignore
+        load_division_spec,
+        learnings_paths_for_division,
+    )
+    DIVISION_SUPPORT = True
+except ImportError:
+    DIVISION_SUPPORT = False
 HOMER_ROOT = HESPER_ROOT.parent.parent
 TOKE_ROOT = HOMER_ROOT.parent.parent
 SKILLS_DIR = Path.home() / ".claude" / "skills"
@@ -127,12 +138,32 @@ def parse_learning_file(path: Path, skill_name: str) -> list[LearningEntry]:
     return entries
 
 
-def mine_all_sources(skills_dir: Path | None = None) -> list[LearningEntry]:
-    """Read every learning source Hesper knows about."""
+def mine_all_sources(
+    skills_dir: Path | None = None,
+    division: str | None = None,
+) -> list[LearningEntry]:
+    """
+    Read every learning source Hesper knows about.
+
+    If division is provided, restricts the per-skill scan to skills in
+    division.all_skills (primary + support), and skips _shared / research /
+    archival sources (those are ecosystem-wide, not division-tagged). This
+    keeps division output focused on its own skills' learnings.
+    """
     skills_dir = skills_dir if skills_dir is not None else SKILLS_DIR
     all_entries: list[LearningEntry] = []
 
-    # Per-skill learnings
+    if division is not None:
+        if not DIVISION_SUPPORT:
+            raise RuntimeError(
+                "division filter requested but _division.py not importable — check sleep/ layout"
+            )
+        spec = load_division_spec(division)
+        for learnings_path in learnings_paths_for_division(spec, skills_dir=skills_dir):
+            all_entries.extend(parse_learning_file(learnings_path, learnings_path.parent.name))
+        return all_entries
+
+    # Per-skill learnings (ecosystem-wide)
     if skills_dir.exists():
         for skill_dir in sorted(skills_dir.iterdir()):
             if not skill_dir.is_dir():
@@ -167,15 +198,21 @@ def write_best_practices(
     top_entries: list[LearningEntry],
     total_mined: int,
     reports_dir: Path | None = None,
+    division: str | None = None,
 ) -> Path:
     reports_dir = reports_dir if reports_dir is not None else REPORTS_DIR
+    if division is not None:
+        reports_dir = reports_dir / division
     reports_dir.mkdir(parents=True, exist_ok=True)
     date = datetime.datetime.now().strftime("%Y-%m-%d")
-    path = reports_dir / f"best_practices_{date}.md"
+    fname = f"best_practices_{division}_{date}.md" if division else f"best_practices_{date}.md"
+    path = reports_dir / fname
 
+    title = f"# Hesper Best Practices — {division or 'ecosystem'} — {date}"
     lines = [
-        f"# Hesper Best Practices — {date}",
+        title,
         "",
+        f"**Division:** {division or '(ecosystem-wide)'}",
         f"**Sources mined:** {total_mined} learning entries",
         f"**Top-N distilled:** {len(top_entries)}",
         "",
@@ -218,13 +255,17 @@ def run_distillation(
     skills_dir: Path | None = None,
     top_n: int = 20,
     reports_dir: Path | None = None,
+    division: str | None = None,
 ) -> dict:
-    entries = mine_all_sources(skills_dir=skills_dir)
+    entries = mine_all_sources(skills_dir=skills_dir, division=division)
     top = distill(entries, top_n=top_n)
-    report_path = write_best_practices(top, total_mined=len(entries), reports_dir=reports_dir)
+    report_path = write_best_practices(
+        top, total_mined=len(entries), reports_dir=reports_dir, division=division,
+    )
     return {
         "ok": True,
         "timestamp": datetime.datetime.now().isoformat(),
+        "division": division,
         "sources_mined": len(entries),
         "top_n": len(top),
         "report_path": str(report_path),
@@ -232,17 +273,26 @@ def run_distillation(
 
 
 def _main(argv: list[str]) -> int:
-    if len(argv) >= 2 and argv[1] in ("-h", "--help"):
-        print(__doc__)
-        return 0
+    parser = argparse.ArgumentParser(
+        prog="hesper",
+        description="Homer L6 Hesper — sleep-time learning distillation. Synthesizes from receipts only.",
+    )
+    parser.add_argument("--top-n", type=int, default=20, help="Number of patterns to distill (default 20)")
+    parser.add_argument(
+        "--division", default=None,
+        help="Filter to skills in this Director division (uses _learnings.md from primary+support skills only)",
+    )
+    parser.add_argument("top_n_legacy", nargs="?", help="(Legacy positional top_n; use --top-n)")
+    args = parser.parse_args(argv[1:])
+    top_n = args.top_n
+    if args.top_n_legacy and args.top_n_legacy.isdigit():
+        top_n = int(args.top_n_legacy)
 
-    top_n = 20
-    if len(argv) >= 2 and argv[1].isdigit():
-        top_n = int(argv[1])
-
-    result = run_distillation(top_n=top_n)
+    result = run_distillation(top_n=top_n, division=args.division)
     print(f"Hesper distillation complete.")
-    print(f"  Sources mined: {result['sources_mined']}")
+    if result.get("division"):
+        print(f"  Division:        {result['division']}")
+    print(f"  Sources mined:   {result['sources_mined']}")
     print(f"  Top-N distilled: {result['top_n']}")
     print(f"  Report: {result['report_path']}")
     return 0

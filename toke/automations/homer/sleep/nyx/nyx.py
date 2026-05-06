@@ -15,6 +15,7 @@ Output: `Toke/automations/homer/sleep/nyx/reports/nyx_audit_YYYY-MM-DD.md`
 
 from __future__ import annotations
 
+import argparse
 import datetime
 import json
 import sys
@@ -35,6 +36,16 @@ SKILLS_DIR = Path.home() / ".claude" / "skills"
 
 sys.path.insert(0, str(ORACLE_PATH))
 from oracle import Oracle  # noqa: E402
+
+sys.path.insert(0, str(NYX_ROOT.parent))
+try:
+    from _division import (  # type: ignore
+        load_division_spec,
+        skill_md_paths_for_division,
+    )
+    DIVISION_SUPPORT = True
+except ImportError:
+    DIVISION_SUPPORT = False
 
 
 @dataclass
@@ -90,8 +101,15 @@ def audit_single_skill(skill_md: Path, oracle: Oracle) -> SkillAuditEntry:
 def run_audit(
     skills_dir: Path | None = None,
     oracle: Oracle | None = None,
+    division: str | None = None,
 ) -> dict:
-    """Audit every SKILL.md in ~/.claude/skills/. Returns structured report."""
+    """
+    Audit every SKILL.md in ~/.claude/skills/. Returns structured report.
+
+    If division is provided, restricts audit to SKILL.md files for skills in
+    division.all_skills (primary + support). Same theater detection logic;
+    smaller corpus.
+    """
     skills_dir = skills_dir if skills_dir is not None else SKILLS_DIR
     oracle = oracle or Oracle()
 
@@ -99,16 +117,27 @@ def run_audit(
     if not skills_dir.exists():
         return {"ok": False, "reason": f"skills dir not found: {skills_dir}", "entries": []}
 
-    for skill_dir in sorted(skills_dir.iterdir()):
-        if not skill_dir.is_dir():
-            continue
-        skill_md = skill_dir / "SKILL.md"
-        if not skill_md.exists():
-            continue
-        try:
-            entries.append(audit_single_skill(skill_md, oracle))
-        except OSError:
-            continue
+    if division is not None:
+        if not DIVISION_SUPPORT:
+            return {"ok": False, "reason": "division filter requested but _division.py not importable", "entries": []}
+        spec = load_division_spec(division)
+        skill_mds = skill_md_paths_for_division(spec, skills_dir=skills_dir)
+        for skill_md in skill_mds:
+            try:
+                entries.append(audit_single_skill(skill_md, oracle))
+            except OSError:
+                continue
+    else:
+        for skill_dir in sorted(skills_dir.iterdir()):
+            if not skill_dir.is_dir():
+                continue
+            skill_md = skill_dir / "SKILL.md"
+            if not skill_md.exists():
+                continue
+            try:
+                entries.append(audit_single_skill(skill_md, oracle))
+            except OSError:
+                continue
 
     # Summarize
     total_bytes = sum(e.size_bytes for e in entries)
@@ -118,6 +147,7 @@ def run_audit(
     return {
         "ok": True,
         "timestamp": datetime.datetime.now().isoformat(),
+        "division": division,
         "skills_audited": len(entries),
         "total_bytes": total_bytes,
         "prune_candidates_count": len(prune_candidates),
@@ -131,12 +161,17 @@ def run_audit(
 def write_report(report: dict, reports_dir: Path | None = None) -> Path:
     """Write a human-readable markdown report."""
     reports_dir = reports_dir if reports_dir is not None else REPORTS_DIR
+    division = report.get("division")
+    if division is not None:
+        reports_dir = reports_dir / division
     reports_dir.mkdir(parents=True, exist_ok=True)
     date = datetime.datetime.now().strftime("%Y-%m-%d")
-    path = reports_dir / f"nyx_audit_{date}.md"
+    fname = f"nyx_audit_{division}_{date}.md" if division else f"nyx_audit_{date}.md"
+    path = reports_dir / fname
 
+    title = f"# Nyx Theater Audit — {division or 'ecosystem'} — {date}"
     lines = [
-        f"# Nyx Theater Audit — {date}",
+        title,
         "",
         f"**Skills audited:** {report['skills_audited']}",
         f"**Total bytes:** {report['total_bytes']:,}",
@@ -183,17 +218,25 @@ def write_report(report: dict, reports_dir: Path | None = None) -> Path:
 
 
 def _main(argv: list[str]) -> int:
-    if len(argv) >= 2 and argv[1] in ("-h", "--help"):
-        print(__doc__)
-        return 0
+    parser = argparse.ArgumentParser(
+        prog="nyx",
+        description="Homer L6 Nyx — sleep-time SKILL.md theater auditor. PROPOSE-only deletion candidates.",
+    )
+    parser.add_argument(
+        "--division", default=None,
+        help="Filter to SKILL.md files for skills in this Director division (primary+support).",
+    )
+    args = parser.parse_args(argv[1:])
 
-    report = run_audit()
+    report = run_audit(division=args.division)
     if not report["ok"]:
         print(f"Nyx audit failed: {report.get('reason')}", file=sys.stderr)
         return 1
 
     path = write_report(report)
     print(f"Nyx audit complete.")
+    if report.get("division"):
+        print(f"  Division: {report['division']}")
     print(f"  Skills audited: {report['skills_audited']}")
     print(f"  PRUNE candidates: {report['prune_candidates_count']}")
     print(f"  INVESTIGATE candidates: {report['investigate_candidates_count']}")

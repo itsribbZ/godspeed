@@ -2,6 +2,23 @@
 
 All notable changes to godspeed are tracked here. Versioning follows [SemVer](https://semver.org/).
 
+## [2.4.0] - 2026-05-05
+### Added
+- **Cost Guard (`automations/homer/cost_guard.py`)** — per-tier USD budget table (S0 $0.005 → S5 $5.000), 1.5× soft-cap with mid-flight `BUDGET_EXCEEDED` verdict, post-flight `cost_efficiency.jsonl` receipts. Every live subagent dispatch carries a tier-stamped budget contract; agent aborts gracefully on breach with partial work preserved. CLI: `cost_guard.py budgets | rollup | recent`.
+- **Agent Runner (`automations/homer/agent_runner.py`)** — three-mode invocation engine for subagent personas: `dry-run` (default — zero API, schema validation), `live` (Anthropic SDK direct, requires `ANTHROPIC_API_KEY`, cost-guarded), `claude-code` (in-session Agent tool dispatch, zero direct API cost). Telemetry to `agent_invocations.jsonl`.
+- **Hook Engineer (`automations/homer/hook_engineer/`)** — QA harness for Claude Code hooks. Probe-shipped checker, side-effect verifier, scaffold generator (Python + Bash for any event), `settings_patch.py` for safe `settings.json` mutation with auto-backup. Catches the class of bug fixed in v2.3.11.
+- **Token Accountant (`automations/homer/token_accountant/`)** — msg.id-deduped transcript reader, per-session $USD receipts, cache-thrash detector (Bayesian-smoothed), long-tail spike detector, predicted-vs-actual drift reconciliation. Receipts log to `~/.claude/telemetry/brain/cost_efficiency.jsonl` (shared with cost_guard).
+- **Sleep engine refresh** (Option B install.sh path only) — `aurora.py`, `hesper.py`, `nyx.py`, `sleep_cli.py`, `_division.py`, `test_sleep.py`, `run_sleep_nightly.bat` synced from upstream. Engines only — dated proposal/best-practices/audit reports are regenerable per install and intentionally not shipped.
+- **Integration tests** — `homer_integration_test.py` + `test_cost_guard.py`. Run via `python -m pytest plugins/godspeed/automations/homer/`.
+
+### Changed
+- `plugins/godspeed/skills/godspeed/SKILL.md` — added Cost Guard section (Phase 6.5) documenting tier→budget table, the three guarantees (pre-flight stamp, mid-flight cap, post-flight receipt), and `BUDGET_EXCEEDED` handling protocol. Explicit "free by default" callout above the section.
+- `README.md` — added "Free by default" section above "What you get" — documents the two opt-in API surfaces (`brain advise` + `agent_runner --mode live`) and confirms the 5 lifecycle hooks make zero network calls.
+
+### Notes
+- **Toke runs at $0 against your Anthropic API account by default.** The classifier is local (Node + regex). Subagents dispatched by Zeus on S3+ tasks use Claude Code's in-session Agent tool, which is part of your existing session — no separate billing channel against your API key. The two opt-in paths (`brain advise` and `agent_runner --mode live`) require an `ANTHROPIC_API_KEY` env var to be set AND an explicit command — they cannot fire silently from a hook.
+- `skill_curator/` was evaluated for inclusion but deferred to v2.5.0 — its `_corpus.py` and `_merge_detector.py` modules have hardcoded skill-name lists that need a public-facing redesign rather than a port, and v4.4 "fit in, don't force" mandates against shipping a forced rewrite. v2.5.0 will land it with public-skill-only worked examples.
+
 ## [2.3.11] - 2026-05-05
 ### Fixed
 - `install.sh` and `install.ps1` now wire the full **5-event** hook block instead of 3. Previous installs silently missed `PreCompact` (snapshot before context compaction) and `SubagentStop` (capture subagent results), and `SessionEnd` was missing the per-session learning-write hook. A fresh install via either path now matches the plugin's `hooks.json` 1:1 — no degraded observability for `install.sh` users.
