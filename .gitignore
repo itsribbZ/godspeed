@@ -53,6 +53,9 @@ desktop.ini
 # Settings backups (these live in git history if needed)
 **/hooks/settings_backup_*.json
 
+# Release-prep staging (gh release create --notes-file scratch dir)
+.tmp_release_notes/
+
 # Project-local Claude Code permissions (user-specific, path-absolute)
 .claude/settings.local.json
 
