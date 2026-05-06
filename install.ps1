@@ -142,19 +142,28 @@ Next steps:
 
      [Environment]::SetEnvironmentVariable('CLAUDE_CODE_SUBAGENT_MODEL', 'sonnet', 'User')
 
-3. Wire the hooks into Claude Code. Add this block to $ClaudeHome\settings.json:
+3. Wire the hooks into Claude Code. Add this block to $ClaudeHome\settings.json
+   (5 lifecycle events — matches the plugin install's hooks.json. Forward slashes
+   keep the JSON valid and work fine on Windows. Requires Git Bash on PATH for .sh):
 
      {
        "hooks": {
          "UserPromptSubmit": [
-           { "command": "`$env:TOKE_ROOT\hooks\brain_advisor.sh" },
-           { "command": "python `$env:TOKE_ROOT\hooks\godspeed_fuzzy_trigger.py" }
+           { "command": "python `$env:TOKE_ROOT/hooks/godspeed_fuzzy_trigger.py" },
+           { "command": "bash `$env:TOKE_ROOT/hooks/brain_advisor.sh" }
          ],
          "PostToolUse": [
-           { "command": "`$env:TOKE_ROOT\hooks\brain_tools_hook.sh" }
+           { "command": "bash `$env:TOKE_ROOT/hooks/brain_tools_hook.sh" }
+         ],
+         "PreCompact": [
+           { "command": "bash `$env:TOKE_ROOT/hooks/pre_compact_snapshot.sh" }
+         ],
+         "SubagentStop": [
+           { "command": "bash `$env:TOKE_ROOT/hooks/subagent_capture.sh" }
          ],
          "SessionEnd": [
-           { "command": "`$env:TOKE_ROOT\hooks\session_cost_report.sh" }
+           { "command": "bash `$env:TOKE_ROOT/hooks/session_cost_report.sh" },
+           { "command": "bash `$env:TOKE_ROOT/hooks/toke_session_learn.sh" }
          ]
        }
      }

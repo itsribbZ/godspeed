@@ -1,3 +1,10 @@
+---
+name: devTeam
+description: DevTeam v4.0 — Adaptive Code Fluidity & Architecture Engine. Calibrated scoring against the 7 Laws of Code Fluidity, domain auto-detection, regression guard, and project-docs reference integration. Holy Tool status. Auto-activates on "devTeam", "deploy devTeam", "fluidity check", "architecture review" — and whenever code is written, reviewed, or architected across multiple modules. Diagnostic engine of the Holy Trinity (devTeam diagnose → profTeam research → implement → verify).
+model: opus
+effort: high
+---
+
 # DevTeam v4.0 — Adaptive Code Fluidity & Architecture Engine
 
 Adaptive code fluidity and architecture engine. Ensures every system achieves Code Fluidity --

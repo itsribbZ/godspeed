@@ -2,9 +2,9 @@ name: validate
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
-    branches: [main]
+    branches: [master]
 
 jobs:
   validate:
@@ -26,8 +26,9 @@ jobs:
           python -c "
           import json, os, sys
           h = json.load(open('plugins/godspeed/hooks/hooks.json'))
+          events = h.get('hooks', h)
           missing = []
-          for event, entries in h.items():
+          for event, entries in events.items():
               for entry in entries:
                   for hook in entry.get('hooks', []):
                       cmd = hook.get('command', '')
@@ -40,4 +41,28 @@ jobs:
               print('Missing:', missing)
               sys.exit(1)
           print('All hook scripts present.')
+          "
+      - name: Validate SKILL.md frontmatter (catches missing name/description/model)
+        run: |
+          python -c "
+          import os, sys, re
+          missing = []
+          for root, _, files in os.walk('plugins/godspeed/skills'):
+              for f in files:
+                  if f != 'SKILL.md':
+                      continue
+                  path = os.path.join(root, f)
+                  txt = open(path, encoding='utf-8').read()
+                  m = re.match(r'^---\s*\n(.*?)\n---\s*\n', txt, re.DOTALL)
+                  if not m:
+                      missing.append(f'{path}: NO FRONTMATTER')
+                      continue
+                  fm = m.group(1)
+                  for key in ('name:', 'description:'):
+                      if key not in fm:
+                          missing.append(f'{path}: missing {key}')
+          if missing:
+              for m in missing: print(m)
+              sys.exit(1)
+          print('All SKILL.md frontmatter valid.')
           "

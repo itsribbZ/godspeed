@@ -2,6 +2,18 @@
 
 All notable changes to godspeed are tracked here. Versioning follows [SemVer](https://semver.org/).
 
+## [2.3.11] - 2026-05-05
+### Fixed
+- `install.sh` and `install.ps1` now wire the full **5-event** hook block instead of 3. Previous installs silently missed `PreCompact` (snapshot before context compaction) and `SubagentStop` (capture subagent results), and `SessionEnd` was missing the per-session learning-write hook. A fresh install via either path now matches the plugin's `hooks.json` 1:1 — no degraded observability for `install.sh` users.
+- `install.ps1` now emits forward-slash paths inside the printed `settings.json` block. Backslashes inside JSON-quoted strings were silently invalidating the file on Windows; forward slashes work on every platform Claude Code runs on.
+- `install.ps1` and `install.sh` now print `bash` as the explicit command for `.sh` hooks. Some PATH configurations were trying to `exec` the shell scripts directly and failing because the shebang resolved to the wrong shell.
+- `.github/workflows/validate.yml` was watching `main`; the canonical branch is `master`. Both `push` and `pull_request` triggers updated. CI now actually runs on every push.
+- `.github/workflows/validate.yml` `hooks.json` parser updated to handle the top-level `hooks` key wrapper introduced in v2.1.1 (was failing to find any hooks at all when `hooks.json` had the wrapper, but passing because the loop body never executed).
+
+### Added
+- `.github/workflows/validate.yml` — new SKILL.md frontmatter validator. Walks `plugins/godspeed/skills/`, checks every `SKILL.md` has frontmatter with at least `name:` and `description:`. Catches the class of bug fixed in this release (devTeam was shipping with no frontmatter at all).
+- `plugins/godspeed/skills/devTeam/SKILL.md` — added missing frontmatter block (`name`, `description`, `model`, `effort`). Without frontmatter, Claude Code couldn't auto-load the skill on trigger words; users had to invoke it by name. Now it activates on "devTeam", "deploy devTeam", "fluidity check", "architecture review", and whenever code is written/reviewed/architected.
+
 ## [2.3.10] - 2026-04-25
 ### Fixed
 - RELEASE.md scrub regex: removed `your-trading-project` and `your-3d-project` (false-positive scrub targets — these are the substitution OUTPUT for `Quantified` / `Forge3D`, not the leak). Restored the original-name patterns (`Quantified` / `Forge3D`) instead, so the scrub catches re-introductions of the real names. Comment expanded to make the placeholder rule clearer for future maintainers.

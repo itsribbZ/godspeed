@@ -138,19 +138,27 @@ Next steps:
 
      export CLAUDE_CODE_SUBAGENT_MODEL="sonnet"
 
-3. Wire the hooks into Claude Code. Add this to ~/.claude/settings.json:
+3. Wire the hooks into Claude Code. Add this to ~/.claude/settings.json
+   (5 lifecycle events — matches the plugin install's hooks.json):
 
      {
        "hooks": {
          "UserPromptSubmit": [
-           { "command": "\$TOKE_ROOT/hooks/brain_advisor.sh" },
-           { "command": "python \$TOKE_ROOT/hooks/godspeed_fuzzy_trigger.py" }
+           { "command": "python \$TOKE_ROOT/hooks/godspeed_fuzzy_trigger.py" },
+           { "command": "bash \$TOKE_ROOT/hooks/brain_advisor.sh" }
          ],
          "PostToolUse": [
-           { "command": "\$TOKE_ROOT/hooks/brain_tools_hook.sh" }
+           { "command": "bash \$TOKE_ROOT/hooks/brain_tools_hook.sh" }
+         ],
+         "PreCompact": [
+           { "command": "bash \$TOKE_ROOT/hooks/pre_compact_snapshot.sh" }
+         ],
+         "SubagentStop": [
+           { "command": "bash \$TOKE_ROOT/hooks/subagent_capture.sh" }
          ],
          "SessionEnd": [
-           { "command": "\$TOKE_ROOT/hooks/session_cost_report.sh" }
+           { "command": "bash \$TOKE_ROOT/hooks/session_cost_report.sh" },
+           { "command": "bash \$TOKE_ROOT/hooks/toke_session_learn.sh" }
          ]
        }
      }
