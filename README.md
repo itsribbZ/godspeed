@@ -17,10 +17,21 @@ Zero fork of Claude Code. Everything wires in through the hook API.
 
 | | |
 |---|---|
-| **Cost** | Subagent auto-routing on a typical heavy-Opus workload (~$15K/mo) projects ~$750/mo savings; auto-orchestration on S3+ tasks projects an additional $600–1,200/mo. Numbers depend on prompt mix — instrument with `brain scan` against your own telemetry. |
-| **Accuracy** | Classifier evaluation harness ships in `toke/automations/brain/eval/`. Bring your own labeled set (`golden_set.json`) and run `brain_vs_baselines.py` to compare against majority-class, keyword-only, length-only, and random baselines. The maintainer's internal 299-prompt set scores **75.6% exact / 0.875 weighted** at v2.7. Your numbers will vary by prompt distribution. |
-| **Latency** | Fast-path hook ~90 ms warm, ~160 ms cold. Measured on Windows 10 / Node 18. |
-| **Compounding** | Every successful synthesis lands in a vector-embedded memory. Next session's similar prompt retrieves the prior answer in milliseconds. |
+| **Cost** | Sonnet auto-routing on subagent calls via `CLAUDE_CODE_SUBAGENT_MODEL=sonnet`, plus per-tier USD ceilings (`automations/homer/cost_guard.py`) on the opt-in live-dispatch path. Real savings = your-Opus-spend × your-S3+-rate. Run `brain scan` after a few sessions to see your number. No projected dollar headline here — the savings depend entirely on your prompt mix. |
+| **Accuracy** | Classifier evaluation harness ships at `toke/automations/brain/eval/eval_harness.py` + `brain_vs_baselines.py`. **Public golden set is not yet shipped** — bring your own labeled `golden_set.json` (schema documented in `toke/README.md`) and run `python toke/automations/brain/eval/brain_vs_baselines.py` to score the classifier against majority-class / keyword-only / length-only / random baselines on your prompts. A small public golden set ships in v2.5.0. |
+| **Latency** | Fast-path hook ~90 ms warm, ~160 ms cold. Measured on Windows 10 / Node 18 — re-measure on your own system; hook timing is environment-sensitive. |
+| **Cost guard** | Every live subagent dispatch carries a tier-stamped USD ceiling (S0 $0.005 → S5 $5.00) with a 1.5× soft-cap. Mid-flight breach triggers `BUDGET_EXCEEDED` and preserves partial work. Receipts to `~/.claude/telemetry/brain/cost_efficiency.jsonl`. Verify locally: `python plugins/godspeed/automations/homer/cost_guard.py budgets`. |
+| **Compounding** | Synthesis from S3+ Zeus runs lands in Mnemos Recall (SQLite + FTS5, optional vector embeddings). Slow-burn benefit — only pays off after dozens of successful gate-writes. New users see no compounding for the first weeks. |
+
+---
+
+## Who this is — and isn't — for
+
+**Strong fit:** Claude Code power-users running 4+ hour sessions on architecture-heavy or multi-file tasks, anyone who's been over-spending on Opus and wants Sonnet auto-routing for subagents, devs who want opinionated multi-agent structure baked in rather than rolling their own.
+
+**Skip this plugin if:** your typical prompts are simple ("fix this typo / add this feature / explain this code") — those are S0–S2 tasks; the methodology adds overhead without proportional benefit. Also skip if you prefer vanilla Claude Code defaults (this changes execution flow), if you work in a team that needs shared state (this is a solo-dev workflow with no multi-user mode), or if a Greek-pantheon naming convention (Zeus, Oracle, Mnemos, Calliope, Clio, Urania) is a non-starter for you aesthetically.
+
+This is one developer's methodology, scrubbed of project-specific names and shipped MIT. The shape reflects the maintainer's preferences. Your mileage will vary by how much your workflow looks like theirs — and the right move if you're unsure is to install it for one heavy session, run `brain scan` afterwards, and decide based on your own numbers.
 
 ---
 
